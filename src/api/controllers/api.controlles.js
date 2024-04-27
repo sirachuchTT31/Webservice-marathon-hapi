@@ -7,7 +7,6 @@ const Boom = require('@hapi/boom')
 const httpResponse = require('../../constant/http-response.js')
 const getAllAdmin = {
     handler: async (request, reply) => {
-
         try {
             const findAll = await prismaClient.tb_admins.findMany({
                 orderBy: {

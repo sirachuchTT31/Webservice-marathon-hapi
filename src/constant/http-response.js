@@ -19,9 +19,15 @@ const STATUS_401 = {
     message: response.ReasonPhrases.UNAUTHORIZED
 }
 
+const STATUS_UNAUTHORIZED = {
+    status_code : response.StatusCodes.UNAUTHORIZED,
+    message : response.ReasonPhrases.UNAUTHORIZED
+}
+
 module.exports = {
     STATUS_200,
     STATUS_500,
     STATUS_400,
-    STATUS_401
+    STATUS_401,
+    STATUS_UNAUTHORIZED
 }
