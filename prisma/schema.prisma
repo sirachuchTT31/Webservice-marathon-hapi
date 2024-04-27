@@ -19,7 +19,7 @@ model tb_admins {
   admin_avatar   String   @db.LongText
   admin_status   String   @db.VarChar(2)
   role           String   @db.VarChar(20)
-  createdAt      DateTime @db.DateTime(0)
+  createdAt      DateTime @default(now()) @db.Timestamp(0)
   updatedAt      DateTime @default(now()) @db.Timestamp(0)
 }
 

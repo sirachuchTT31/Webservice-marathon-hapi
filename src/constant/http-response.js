@@ -24,10 +24,16 @@ const STATUS_UNAUTHORIZED = {
     message : response.ReasonPhrases.UNAUTHORIZED
 }
 
+const STATUS_CREATED = {
+    status_code : response.StatusCodes.CREATED,
+    message : response.ReasonPhrases.CREATED
+}
+
 module.exports = {
     STATUS_200,
     STATUS_500,
     STATUS_400,
     STATUS_401,
-    STATUS_UNAUTHORIZED
+    STATUS_UNAUTHORIZED,
+    STATUS_CREATED
 }
