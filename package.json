@@ -1,0 +1,24 @@
+{
+  "name": "marathon_api_prisma",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@hapi/boom": "^10.0.1",
+    "@hapi/hapi": "^21.3.9",
+    "@prisma/client": "^5.13.0",
+    "bcrypt": "^5.1.1",
+    "http-status-codes": "^2.3.0",
+    "joi": "^17.13.0",
+    "jsonwebtoken": "^9.0.2",
+    "nodemon": "^3.1.0",
+    "prisma": "^5.13.0",
+    "underscore": "^1.13.6"
+  }
+}
