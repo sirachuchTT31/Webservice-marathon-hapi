@@ -29,6 +29,7 @@ const STATUS_CREATED = {
     message : response.ReasonPhrases.CREATED
 }
 
+
 module.exports = {
     STATUS_200,
     STATUS_500,

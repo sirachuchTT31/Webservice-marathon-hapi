@@ -32,7 +32,7 @@ model tb_authentications {
   avatar          String            @db.LongText
   access_status   String            @db.VarChar(2)
   role            String            @db.VarChar(50)
-  createdAt       DateTime          @db.DateTime(0)
+  createdAt       DateTime          @default(now()) @db.Timestamp(0)
   updatedAt       DateTime          @default(now()) @db.Timestamp(0)
   tb_transactions tb_transactions[]
 }

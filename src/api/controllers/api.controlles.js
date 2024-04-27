@@ -1,19 +1,19 @@
 const _ = require('underscore')
 const bcrypt = require('bcrypt');
-const { PrismaClient, Prisma } = require('@prisma/client')
+const { PrismaClient } = require('@prisma/client')
 const prismaClient = new PrismaClient();
 const baseResult = require('../../utils/response-base.js');
 const baseModel = require('../../utils/response-model.js')
 const Boom = require('@hapi/boom')
 const httpResponse = require('../../constant/http-response.js')
-const { createAdminValidate } = require('../validate/admin.validate.js')
+const validateAdmin = require('../validate/admin.validate.js')
+
 //FIXME: Admin
 const createAdmin = {
     handler: async (request, reply) => {
         try {
             const payload = request.payload
-            const { value, error } = createAdminValidate.validate(payload)
-            console.log(error)
+            const { value, error } = validateAdmin.createAdminValidate.validate(payload)
             if (!error) {
                 const findDuplicates = await prismaClient.tb_admins.findFirst({
                     where: {
@@ -46,19 +46,18 @@ const createAdmin = {
                         name: bodyAdmin.admin_name,
                         lastname: bodyAdmin.admin_lastname,
                         avatar: bodyAdmin.admin_avatar,
-                        access_status : 'N',
+                        access_status: 'N',
                         role: bodyAdmin.role,
                     }
                     const t = await prismaClient.$transaction([
                         prismaClient.tb_admins.create({
-                            data : bodyAdmin
+                            data: bodyAdmin
                         }),
                         prismaClient.tb_authentications.create({
-                            data : bodyAuthen
+                            data: bodyAuthen
                         })
                     ])
-                    console.log(t)
-                    if(!_.isEmpty(t)){
+                    if (!_.isEmpty(t)) {
                         baseModel.IBaseNocontentModel = {
                             status: true,
                             status_code: httpResponse.STATUS_CREATED.status_code,
@@ -101,6 +100,7 @@ const createAdmin = {
         }
     }
 }
+
 const getAllAdmin = {
     handler: async (request, reply) => {
         try {
@@ -134,7 +134,130 @@ const getAllAdmin = {
     }
 }
 
+const updateAdmin = {
+    handler: async (request, reply) => {
+        try {
+            const payload = request.payload
+            const { value, error } = validateAdmin.updateAdminValidate.validate(payload)
+            if (!error) {
+                const t = await prismaClient.$transaction([
+                    prismaClient.tb_admins.update({
+                        where: {
+                            admin_id: value.admin_id
+                        },
+                        data: {
+                            admin_name: value.admin_name ? value.admin_name : '',
+                            admin_lastname: value.admin_lastname ? value.admin_lastname : '',
+                            admin_tel: value.admin_tel ? value.admin_tel : '',
+                            admin_address: value.admin_address ? value.admin_address : '',
+                            admin_email: value.admin_email ? value.admin_email : '',
+                            admin_avatar: value.admin_avatar ? value.admin_avatar : '',
+                        }
+                    }),
+                    prismaClient.tb_authentications.update({
+                        where: {
+                            auth_id: value.admin_id
+                        },
+                        data: {
+                            name: value.admin_name ? value.admin_name : '',
+                            lastname: value.admin_lastname ? value.admin_lastname : '',
+                            avatar: value.admin_avatar ? value.admin_avatar : '',
+                        }
+                    })
+                ]);
+                if (!_.isEmpty(t)) {
+                    baseModel.IBaseNocontentModel = {
+                        status: true,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
+                        message: 'Updated successfully',
+                        error_message: '',
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+                else {
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_400.status_code,
+                        message: 'Updated failed',
+                        error_message: httpResponse.STATUS_400.message,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+            }
+            else {
+                baseModel.IBaseNocontentModel = {
+                    status: false,
+                    status_code: httpResponse.STATUS_400.status_code,
+                    message: httpResponse.STATUS_400.message,
+                    error_message: httpResponse.STATUS_400.message,
+                }
+                return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+            }
+        }
+        catch (e) {
+            console.error(e);
+            Boom.badImplementation()
+        }
+    }
+}
+
+const deleteAdmin = {
+    handler: async (request, reply) => {
+        try {
+            const payload = request.payload
+            const { value, error } = validateAdmin.deleteAdminValidate.validate(payload)
+            if (!error) {
+                const t = await prismaClient.$transaction([
+                    prismaClient.tb_admins.delete({
+                        where : {
+                            admin_id : value.admin_id
+                        }
+                    }),
+                    prismaClient.tb_authentications.delete({
+                        where : {
+                            auth_id : value.admin_id
+                        }
+                    })
+                ]);
+                if(!_.isEmpty(t)){
+                    baseModel.IBaseNocontentModel = {
+                        status: true,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
+                        message: 'Delete successfully',
+                        error_message: '',
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+                else {
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_400.status_code,
+                        message: 'Delete failed',
+                        error_message: httpResponse.STATUS_400.message,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+            }
+            else {
+                baseModel.IBaseNocontentModel = {
+                    status: false,
+                    status_code: httpResponse.STATUS_400.status_code,
+                    message: httpResponse.STATUS_400.message,
+                    error_message: httpResponse.STATUS_400.message,
+                }
+                return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+            }
+        }
+        catch (e) {
+            console.log(e);
+            Boom.badImplementation();
+        }
+    }
+}
+
 module.exports = {
     createAdmin,
-    getAllAdmin
+    getAllAdmin,
+    updateAdmin,
+    deleteAdmin
 }

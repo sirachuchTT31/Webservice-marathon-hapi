@@ -11,8 +11,23 @@ const createAdminValidate = Joi.object().keys({
     admin_email : Joi.string(),
     admin_avatar : Joi.string().empty(''),
     
-})
+});
 
+const updateAdminValidate = Joi.object().keys({
+    admin_id :Joi.string().required(),
+    admin_name: Joi.string().required(),
+    admin_lastname: Joi.string().required(),
+    admin_tel : Joi.string(),
+    admin_address : Joi.string(),
+    admin_email : Joi.string(),
+    admin_avatar : Joi.string().empty(''),
+});
+
+const deleteAdminValidate = Joi.object().keys({
+    admin_id : Joi.string().required()
+})
 module.exports = {
-    createAdminValidate
+    createAdminValidate,
+    updateAdminValidate,
+    deleteAdminValidate
 }
