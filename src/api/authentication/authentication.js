@@ -54,6 +54,34 @@ const signIn = {
     }
 }
 
+const jwtVerify = async (token, access_token_secret) => {
+    try {
+        let response = {}
+        let err = null
+        jwt.verify(token, access_token_secret, {
+            algorithms: ['HS256']
+        }, function (err, res) {
+            response = res ? res : {}
+            err = err
+        });
+
+        if (err) {
+            console.log('jwt middleware error')
+        }
+        return reply.response({
+            isValid: err ? false : true,
+            result: response
+        })
+    }
+    catch (e) {
+        return reply.response({
+            isValid: false,
+            result: {}
+        })
+    }
+}
+
 module.exports = {
-    signIn
+    signIn,
+    jwtVerify
 }
