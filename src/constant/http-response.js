@@ -1,6 +1,7 @@
 const response = require('http-status-codes')
 const STATUS_200 = {
-    status_code: response.StatusCodes.OK
+    status_code: response.StatusCodes.OK,
+    message : response.ReasonPhrases.OK
 }
 
 const STATUS_500 = {

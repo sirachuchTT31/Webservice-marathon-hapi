@@ -6,7 +6,7 @@ module.exports = {
         version: '1.0.0',
         register: (server) => {
             authenRouter?.forEach((path) => server.route(path))
-            // routerAPI?.forEach((path) => server.route(path))
+            routerAPI?.forEach((path) => server.route(path))
         }
     }
 }
