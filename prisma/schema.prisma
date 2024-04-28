@@ -8,23 +8,27 @@ datasource db {
 }
 
 model tb_admins {
-  admin_id       String   @id @db.VarChar(100)
-  admin_username String   @db.VarChar(255)
-  admin_password String   @db.VarChar(100)
-  admin_name     String   @db.VarChar(100)
-  admin_lastname String   @db.VarChar(100)
-  admin_tel      String   @db.VarChar(10)
-  admin_address  String   @db.VarChar(255)
-  admin_email    String   @db.VarChar(100)
-  admin_avatar   String   @db.LongText
-  admin_status   String   @db.VarChar(2)
-  role           String   @db.VarChar(20)
-  createdAt      DateTime @default(now()) @db.Timestamp(0)
-  updatedAt      DateTime @default(now()) @db.Timestamp(0)
+  id                 Int                @id @default(autoincrement())
+  admin_id           String             @db.VarChar(100)
+  admin_username     String             @db.VarChar(255)
+  admin_password     String             @db.VarChar(100)
+  admin_name         String             @db.VarChar(100)
+  admin_lastname     String             @db.VarChar(100)
+  admin_tel          String             @db.VarChar(10)
+  admin_address      String             @db.VarChar(255)
+  admin_email        String             @db.VarChar(100)
+  admin_avatar       String             @db.LongText
+  admin_status       String             @db.VarChar(2)
+  role               String             @db.VarChar(20)
+  tb_authentications tb_authentications @relation(fields: [auth_id], references: [id])
+  auth_id            Int                @unique
+  createdAt          DateTime           @default(now()) @db.Timestamp(0)
+  updatedAt          DateTime           @default(now()) @db.Timestamp(0)
 }
 
 model tb_authentications {
-  auth_id         String            @id @db.VarChar(100)
+  id              Int               @id @default(autoincrement())
+  auth_id         String            @db.VarChar(100)
   username        String            @db.VarChar(100)
   password        String            @db.VarChar(100)
   name            String            @db.VarChar(100)
@@ -35,10 +39,14 @@ model tb_authentications {
   createdAt       DateTime          @default(now()) @db.Timestamp(0)
   updatedAt       DateTime          @default(now()) @db.Timestamp(0)
   tb_transactions tb_transactions[]
+  tb_admins       tb_admins?
+  tb_members      tb_members?
+  tb_organizers   tb_organizers?
 }
 
 model tb_master_locations {
-  location_id                String                       @id @db.VarChar(100)
+  id                         Int                          @id @default(autoincrement())
+  location_id                String                       @db.VarChar(100)
   location_province          String                       @db.VarChar(255)
   location_district          String                       @db.VarChar(255)
   location_zipcode           String                       @db.VarChar(50)
@@ -49,23 +57,27 @@ model tb_master_locations {
 }
 
 model tb_members {
-  member_id       String   @id @db.VarChar(100)
-  member_username String   @db.VarChar(100)
-  member_password String   @db.VarChar(100)
-  member_name     String   @db.VarChar(100)
-  member_lastname String   @db.VarChar(100)
-  member_tel      String   @db.VarChar(10)
-  member_address  String   @db.VarChar(255)
-  member_email    String   @db.VarChar(100)
-  member_avatar   String   @db.LongText
-  member_status   String   @db.VarChar(2)
-  role            String   @db.VarChar(20)
-  createdAt       DateTime @default(now()) @db.Timestamp(0)
-  updatedAt       DateTime @default(now()) @db.Timestamp(0)
+  id                 Int                @id @default(autoincrement())
+  member_id          String             @db.VarChar(100)
+  member_username    String             @db.VarChar(100)
+  member_password    String             @db.VarChar(100)
+  member_name        String             @db.VarChar(100)
+  member_lastname    String             @db.VarChar(100)
+  member_tel         String             @db.VarChar(10)
+  member_address     String             @db.VarChar(255)
+  member_email       String             @db.VarChar(100)
+  member_avatar      String             @db.LongText
+  member_status      String             @db.VarChar(2)
+  role               String             @db.VarChar(20)
+  tb_authentications tb_authentications @relation(fields: [auth_id], references: [id])
+  auth_id            Int                @unique
+  createdAt          DateTime           @default(now()) @db.Timestamp(0)
+  updatedAt          DateTime           @default(now()) @db.Timestamp(0)
 }
 
 model tb_organizers {
-  organ_id                            String                                @id @db.VarChar(100)
+  id                                  Int                                   @id @default(autoincrement())
+  organ_id                            String                                @db.VarChar(100)
   organ_username                      String                                @db.VarChar(100)
   organ_password                      String                                @db.VarChar(100)
   organ_name                          String                                @db.VarChar(100)
@@ -76,6 +88,8 @@ model tb_organizers {
   organ_avatar                        String                                @db.LongText
   organ_status                        String                                @db.VarChar(2)
   role                                String                                @db.VarChar(20)
+  tb_authentications                  tb_authentications                    @relation(fields: [auth_id], references: [id])
+  auth_id                             Int                                   @unique
   createdAt                           DateTime                              @default(now()) @db.Timestamp(0)
   updatedAt                           DateTime                              @default(now()) @db.Timestamp(0)
   tb_task_approver_organizer_accounts tb_task_approver_organizer_accounts[]
@@ -83,7 +97,8 @@ model tb_organizers {
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model tb_register_running_events {
-  reg_event_id                String                        @id @db.VarChar(100)
+  id                          Int                           @id @default(autoincrement())
+  reg_event_id                String                        @db.VarChar(100)
   reg_event_name              String                        @db.VarChar(255)
   reg_event_due_date          DateTime                      @db.Date
   reg_event_price             Float
@@ -92,12 +107,12 @@ model tb_register_running_events {
   reg_event_distance          String                        @db.VarChar(255)
   reg_event_status            String                        @db.VarChar(100)
   reg_event_path_img          String                        @db.VarChar(255)
-  location_id                 String                        @db.VarChar(100)
-  trans_id                    String                        @db.VarChar(100)
+  location_id                 Int                           @unique
+  trans_id                    Int                           @unique
   createdAt                   DateTime                      @default(now()) @db.Timestamp(0)
   updatedAt                   DateTime                      @default(now()) @db.Timestamp(0)
-  tb_master_locations         tb_master_locations           @relation(fields: [location_id], references: [location_id], onDelete: NoAction, onUpdate: NoAction, map: "tb_register_running_events_ibfk_1")
-  tb_transactions             tb_transactions               @relation(fields: [trans_id], references: [trans_id], onDelete: NoAction, onUpdate: NoAction, map: "tb_register_running_events_ibfk_2")
+  tb_master_locations         tb_master_locations           @relation(fields: [location_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "tb_register_running_events_ibfk_1")
+  tb_transactions             tb_transactions               @relation(fields: [trans_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "tb_register_running_events_ibfk_2")
   tb_register_running_members tb_register_running_members[]
   tb_task_approver_reg_events tb_task_approver_reg_events[]
 
@@ -106,19 +121,20 @@ model tb_register_running_events {
 }
 
 model tb_register_running_members {
-  reg_member_id                String                         @id @db.VarChar(100)
+  id                           Int                            @id @default(autoincrement())
+  reg_member_id                String                         @db.VarChar(100)
   reg_member_status            String                         @db.VarChar(45)
   reg_member_description       String?                        @db.VarChar(255)
   name                         String                         @db.VarChar(100)
   lastname                     String                         @db.VarChar(100)
   tel                          String                         @db.VarChar(45)
   email                        String                         @db.VarChar(100)
-  reg_event_id                 String                         @db.VarChar(100)
-  trans_id                     String                         @db.VarChar(100)
+  reg_event_id                 Int                            @unique
+  trans_id                     Int                            @unique
   createdAt                    DateTime                       @default(now()) @db.Timestamp(0)
   updatedAt                    DateTime                       @default(now()) @db.Timestamp(0)
-  tb_register_running_events   tb_register_running_events     @relation(fields: [reg_event_id], references: [reg_event_id], onDelete: NoAction, onUpdate: NoAction, map: "tb_register_running_members_ibfk_1")
-  tb_transactions              tb_transactions                @relation(fields: [trans_id], references: [trans_id], onDelete: NoAction, onUpdate: NoAction, map: "tb_register_running_members_ibfk_2")
+  tb_register_running_events   tb_register_running_events     @relation(fields: [reg_event_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "tb_register_running_members_ibfk_1")
+  tb_transactions              tb_transactions                @relation(fields: [trans_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "tb_register_running_members_ibfk_2")
   tb_task_approver_reg_members tb_task_approver_reg_members[]
 
   @@index([reg_event_id], map: "reg_event_id")
@@ -126,54 +142,58 @@ model tb_register_running_members {
 }
 
 model tb_task_approver_organizer_accounts {
-  task_apv_organ_id          String        @id @db.VarChar(100)
+  id                         Int           @id @default(autoincrement())
+  task_apv_organ_id          String        @db.VarChar(100)
   task_apv_organ_status      String        @db.VarChar(255)
   task_apv_organ_reason      String?       @db.VarChar(255)
   task_apv_organ_approver_by String        @db.VarChar(100)
-  organ_id                   String        @db.VarChar(100)
+  organ_id                   Int           @unique
   createdAt                  DateTime      @default(now()) @db.Timestamp(0)
   updatedAt                  DateTime      @default(now()) @db.Timestamp(0)
-  tb_organizers              tb_organizers @relation(fields: [organ_id], references: [organ_id], onDelete: NoAction, onUpdate: NoAction, map: "organ_id")
+  tb_organizers              tb_organizers @relation(fields: [organ_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "organ_id")
 
   @@index([organ_id], map: "organ_id_idx")
 }
 
 model tb_task_approver_reg_events {
-  task_apv_reg_id            String                     @id @db.VarChar(100)
+  id                         Int                        @id @default(autoincrement())
+  task_apv_reg_id            String                     @db.VarChar(100)
   task_apv_reg_status        String                     @db.VarChar(255)
   task_apv_reg_approver_by   String                     @db.VarChar(100)
   task_apv_reg_reason        String?                    @db.VarChar(255)
-  reg_event_id               String                     @db.VarChar(100)
+  reg_event_id               Int                        @unique
   createdAt                  DateTime                   @default(now()) @db.Timestamp(0)
   updatedAt                  DateTime                   @default(now()) @db.Timestamp(0)
-  tb_register_running_events tb_register_running_events @relation(fields: [reg_event_id], references: [reg_event_id], onDelete: NoAction, onUpdate: NoAction, map: "task_approver_reg_events_ibfk_1")
+  tb_register_running_events tb_register_running_events @relation(fields: [reg_event_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "task_approver_reg_events_ibfk_1")
 
   @@index([reg_event_id], map: "reg_event_id")
 }
 
 model tb_task_approver_reg_members {
-  task_apv_reg_member_id          String                      @id @db.VarChar(100)
+  id                              Int                         @id @default(autoincrement())
+  task_apv_reg_member_id          String                      @db.VarChar(100)
   task_apv_reg_member_status      String                      @db.VarChar(45)
   task_apv_reg_member_approver_by String                      @db.VarChar(100)
   task_apv_reg_member_reason      String?                     @db.VarChar(255)
-  reg_member_id                   String                      @db.VarChar(100)
+  reg_member_id                   Int                         @unique
   createdAt                       DateTime                    @default(now()) @db.Timestamp(0)
   updatedAt                       DateTime                    @default(now()) @db.Timestamp(0)
-  tb_register_running_members     tb_register_running_members @relation(fields: [reg_member_id], references: [reg_member_id], onDelete: NoAction, onUpdate: NoAction, map: "tb_task_approver_reg_members_ibfk_1")
+  tb_register_running_members     tb_register_running_members @relation(fields: [reg_member_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "tb_task_approver_reg_members_ibfk_1")
 
   @@index([reg_member_id], map: "reg_member_id")
 }
 
 model tb_transactions {
-  trans_id                    String                        @id @db.VarChar(100)
+  id                          Int                           @id @default(autoincrement())
+  trans_id                    String                        @db.VarChar(100)
   trans_todo                  String                        @db.VarChar(255)
   trans_status                String                        @db.VarChar(100)
-  auth_id                     String                        @db.VarChar(100)
+  auth_id                     Int                           @unique
   createdAt                   DateTime                      @default(now()) @db.Timestamp(0)
   updatedAt                   DateTime                      @default(now()) @db.Timestamp(0)
   tb_register_running_events  tb_register_running_events[]
   tb_register_running_members tb_register_running_members[]
-  tb_authentications          tb_authentications            @relation(fields: [auth_id], references: [auth_id], onDelete: NoAction, onUpdate: NoAction, map: "tb_transactions_ibfk_1")
+  tb_authentications          tb_authentications            @relation(fields: [auth_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "tb_transactions_ibfk_1")
 
   @@index([auth_id], map: "auth_id")
 }
