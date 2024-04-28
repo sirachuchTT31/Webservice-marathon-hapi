@@ -43,7 +43,7 @@ model tb_master_locations {
   location_district          String                       @db.VarChar(255)
   location_zipcode           String                       @db.VarChar(50)
   location_address           String                       @db.VarChar(255)
-  createdAt                  DateTime                     @db.DateTime(0)
+  createdAt                  DateTime                     @default(now()) @db.Timestamp(0)
   updatedAt                  DateTime                     @default(now()) @db.Timestamp(0)
   tb_register_running_events tb_register_running_events[]
 }
@@ -60,7 +60,7 @@ model tb_members {
   member_avatar   String   @db.LongText
   member_status   String   @db.VarChar(2)
   role            String   @db.VarChar(20)
-  createdAt       DateTime @db.DateTime(0)
+  createdAt       DateTime @default(now()) @db.Timestamp(0)
   updatedAt       DateTime @default(now()) @db.Timestamp(0)
 }
 
@@ -76,7 +76,7 @@ model tb_organizers {
   organ_avatar                        String                                @db.LongText
   organ_status                        String                                @db.VarChar(2)
   role                                String                                @db.VarChar(20)
-  createdAt                           DateTime                              @db.DateTime(0)
+  createdAt                           DateTime                              @default(now()) @db.Timestamp(0)
   updatedAt                           DateTime                              @default(now()) @db.Timestamp(0)
   tb_task_approver_organizer_accounts tb_task_approver_organizer_accounts[]
 }
@@ -94,7 +94,7 @@ model tb_register_running_events {
   reg_event_path_img          String                        @db.VarChar(255)
   location_id                 String                        @db.VarChar(100)
   trans_id                    String                        @db.VarChar(100)
-  createdAt                   DateTime                      @db.DateTime(0)
+  createdAt                   DateTime                      @default(now()) @db.Timestamp(0)
   updatedAt                   DateTime                      @default(now()) @db.Timestamp(0)
   tb_master_locations         tb_master_locations           @relation(fields: [location_id], references: [location_id], onDelete: NoAction, onUpdate: NoAction, map: "tb_register_running_events_ibfk_1")
   tb_transactions             tb_transactions               @relation(fields: [trans_id], references: [trans_id], onDelete: NoAction, onUpdate: NoAction, map: "tb_register_running_events_ibfk_2")
@@ -115,7 +115,7 @@ model tb_register_running_members {
   email                        String                         @db.VarChar(100)
   reg_event_id                 String                         @db.VarChar(100)
   trans_id                     String                         @db.VarChar(100)
-  createdAt                    DateTime                       @db.DateTime(0)
+  createdAt                    DateTime                       @default(now()) @db.Timestamp(0)
   updatedAt                    DateTime                       @default(now()) @db.Timestamp(0)
   tb_register_running_events   tb_register_running_events     @relation(fields: [reg_event_id], references: [reg_event_id], onDelete: NoAction, onUpdate: NoAction, map: "tb_register_running_members_ibfk_1")
   tb_transactions              tb_transactions                @relation(fields: [trans_id], references: [trans_id], onDelete: NoAction, onUpdate: NoAction, map: "tb_register_running_members_ibfk_2")
@@ -131,7 +131,7 @@ model tb_task_approver_organizer_accounts {
   task_apv_organ_reason      String?       @db.VarChar(255)
   task_apv_organ_approver_by String        @db.VarChar(100)
   organ_id                   String        @db.VarChar(100)
-  createdAt                  DateTime      @db.DateTime(0)
+  createdAt                  DateTime      @default(now()) @db.Timestamp(0)
   updatedAt                  DateTime      @default(now()) @db.Timestamp(0)
   tb_organizers              tb_organizers @relation(fields: [organ_id], references: [organ_id], onDelete: NoAction, onUpdate: NoAction, map: "organ_id")
 
@@ -144,7 +144,7 @@ model tb_task_approver_reg_events {
   task_apv_reg_approver_by   String                     @db.VarChar(100)
   task_apv_reg_reason        String?                    @db.VarChar(255)
   reg_event_id               String                     @db.VarChar(100)
-  createdAt                  DateTime                   @db.DateTime(0)
+  createdAt                  DateTime                   @default(now()) @db.Timestamp(0)
   updatedAt                  DateTime                   @default(now()) @db.Timestamp(0)
   tb_register_running_events tb_register_running_events @relation(fields: [reg_event_id], references: [reg_event_id], onDelete: NoAction, onUpdate: NoAction, map: "task_approver_reg_events_ibfk_1")
 
@@ -157,7 +157,7 @@ model tb_task_approver_reg_members {
   task_apv_reg_member_approver_by String                      @db.VarChar(100)
   task_apv_reg_member_reason      String?                     @db.VarChar(255)
   reg_member_id                   String                      @db.VarChar(100)
-  createdAt                       DateTime                    @db.DateTime(0)
+  createdAt                       DateTime                    @default(now()) @db.Timestamp(0)
   updatedAt                       DateTime                    @default(now()) @db.Timestamp(0)
   tb_register_running_members     tb_register_running_members @relation(fields: [reg_member_id], references: [reg_member_id], onDelete: NoAction, onUpdate: NoAction, map: "tb_task_approver_reg_members_ibfk_1")
 
@@ -169,7 +169,7 @@ model tb_transactions {
   trans_todo                  String                        @db.VarChar(255)
   trans_status                String                        @db.VarChar(100)
   auth_id                     String                        @db.VarChar(100)
-  createdAt                   DateTime                      @db.DateTime(0)
+  createdAt                   DateTime                      @default(now()) @db.Timestamp(0)
   updatedAt                   DateTime                      @default(now()) @db.Timestamp(0)
   tb_register_running_events  tb_register_running_events[]
   tb_register_running_members tb_register_running_members[]

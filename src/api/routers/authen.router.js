@@ -5,6 +5,16 @@ const routers = [
         method : 'POST',
         path : '/api/singin',
         config : authenticationHandler.signIn
+    },
+    {
+        method : 'POST',
+        path : '/api/register-members',
+        config : authenticationHandler.registerMembers
+    },
+    {
+        method : 'POST',
+        path : '/api/register-organizer',
+        config : authenticationHandler.registerOrganizer
     }
 ]
 
