@@ -7,6 +7,7 @@ const baseModel = require('../../utils/response-model.js')
 const Boom = require('@hapi/boom')
 const httpResponse = require('../../constant/http-response.js')
 const validateAdmin = require('../validate/admin.validate.js')
+const validateMasterData = require('../validate/master-data.validate.js')
 
 //FIXME: Admin
 const createAdmin = {
@@ -255,9 +256,68 @@ const deleteAdmin = {
     }
 }
 
+//FIXME: Master data 
+const createMasterLocation = {
+    handler : async (request , reply) => {
+        try{
+            const payload = request.payload
+            const {value , error} = validateMasterData.createLocation.validate(payload)
+            if(!error){
+                let math = Math.random() * 10000000
+                let newmath = Math.ceil(math)
+                let _id = "LOCATION" + String(newmath)
+                const body = {
+                    location_id: _id,
+                    location_province: value.location_province,
+                    location_district: value.location_district,
+                    location_zipcode: value.location_zipcode,
+                    location_address: value.location_address
+                }
+                const createResponse = await prismaClient.tb_master_locations.create({
+                    data : body
+                });
+                if(!_.isEmpty(createResponse)){
+                    baseModel.IBaseNocontentModel = {
+                        status: true,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
+                        message: 'Create successfully',
+                        error_message: '',
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+                else {
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_400.status_code,
+                        message: 'Create failed',
+                        error_message: httpResponse.STATUS_400.message,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+            }
+            else {
+                baseModel.IBaseNocontentModel = {
+                    status: false,
+                    status_code: httpResponse.STATUS_400.status_code,
+                    message: httpResponse.STATUS_400.message,
+                    error_message: httpResponse.STATUS_400.message,
+                }
+                return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+            }
+        }
+        catch(e){
+            console.log(e);
+            Boom.badImplementation();
+        }
+    }
+}
 module.exports = {
+    //Admin
     createAdmin,
     getAllAdmin,
     updateAdmin,
-    deleteAdmin
+    deleteAdmin,
+
+    //MasterData 
+    createMasterLocation
 }

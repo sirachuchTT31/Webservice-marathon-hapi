@@ -1,6 +1,7 @@
 const Controller = require('../controllers/api.controlles.js')
 
 const routers = [
+    //FIXME: Admin
     {
         method : 'POST',
         path : '/api/create-admin',
@@ -20,6 +21,12 @@ const routers = [
         method : 'POST',
         path : '/api/delete-admin',
         config : Controller.deleteAdmin
+    },
+    //FIXME: MasterData
+    {
+        method : 'POST',
+        path : '/api/create-master-location',
+        config : Controller.createMasterLocation
     }
 ]
 
