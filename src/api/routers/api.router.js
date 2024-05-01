@@ -27,6 +27,16 @@ const routers = [
         method : 'POST',
         path : '/api/create-master-location',
         config : Controller.createMasterLocation
+    },
+    {
+        method : 'GET',
+        path : '/api/get-all-master-location',
+        config : Controller.getAllLocation
+    },
+    {
+        method : 'POST',
+        path : '/api/create-event',
+        config : Controller.createEvent
     }
 ]
 

@@ -8,6 +8,7 @@ const Boom = require('@hapi/boom')
 const httpResponse = require('../../constant/http-response.js')
 const validateAdmin = require('../validate/admin.validate.js')
 const validateMasterData = require('../validate/master-data.validate.js')
+const validateEvent = require('../validate/event.validate.js')
 
 //FIXME: Admin
 const createAdmin = {
@@ -27,35 +28,33 @@ const createAdmin = {
                     let _id = "ADMIN" + String(newMath);
                     let salt = await bcrypt.genSalt(10);
                     let hash = await bcrypt.hash(value.admin_password, salt)
-                    const bodyAdmin = {
-                        admin_id: _id,
-                        admin_username: payload.admin_username,
-                        admin_password: hash,
-                        admin_name: payload.admin_name,
-                        admin_lastname: payload.admin_lastname,
-                        admin_tel: payload.admin_tel,
-                        admin_address: payload.admin_address,
-                        admin_email: payload.admin_email,
-                        admin_avatar: payload.admin_avatar,
-                        admin_status: 'N',
-                        role: "admin",
-                    }
-                    const bodyAuthen = {
-                        auth_id: bodyAdmin.admin_id,
-                        username: bodyAdmin.admin_username,
-                        password: bodyAdmin.admin_password,
-                        name: bodyAdmin.admin_name,
-                        lastname: bodyAdmin.admin_lastname,
-                        avatar: bodyAdmin.admin_avatar,
-                        access_status: 'N',
-                        role: bodyAdmin.role,
-                    }
                     const t = await prismaClient.$transaction([
-                        prismaClient.tb_admins.create({
-                            data: bodyAdmin
-                        }),
                         prismaClient.tb_authentications.create({
-                            data: bodyAuthen
+                            data: {
+                                auth_id: _id,
+                                username: payload.admin_username,
+                                password: hash,
+                                name: payload.admin_name,
+                                lastname: payload.admin_lastname,
+                                avatar: payload.admin_avatar,
+                                access_status: 'N',
+                                role: 'ADMIN',
+                                tb_admins: {
+                                    create: {
+                                        admin_id : _id,
+                                        admin_username: payload.admin_username,
+                                        admin_password: hash,
+                                        admin_name: payload.admin_name,
+                                        admin_lastname: payload.admin_lastname,
+                                        admin_tel: payload.admin_tel,
+                                        admin_address: payload.admin_address,
+                                        admin_email: payload.admin_email,
+                                        admin_avatar: payload.admin_avatar,
+                                        admin_status: 'N',
+                                        role: 'ADMIN',
+                                    }
+                                }
+                            }
                         })
                     ])
                     if (!_.isEmpty(t)) {
@@ -210,17 +209,17 @@ const deleteAdmin = {
             if (!error) {
                 const t = await prismaClient.$transaction([
                     prismaClient.tb_admins.delete({
-                        where : {
-                            admin_id : value.admin_id
+                        where: {
+                            admin_id: value.admin_id
                         }
                     }),
                     prismaClient.tb_authentications.delete({
-                        where : {
-                            auth_id : value.admin_id
+                        where: {
+                            auth_id: value.admin_id
                         }
                     })
                 ]);
-                if(!_.isEmpty(t)){
+                if (!_.isEmpty(t)) {
                     baseModel.IBaseNocontentModel = {
                         status: true,
                         status_code: httpResponse.STATUS_CREATED.status_code,
@@ -257,12 +256,13 @@ const deleteAdmin = {
 }
 
 //FIXME: Master data 
+// TODO: Dont test
 const createMasterLocation = {
-    handler : async (request , reply) => {
-        try{
+    handler: async (request, reply) => {
+        try {
             const payload = request.payload
-            const {value , error} = validateMasterData.createLocation.validate(payload)
-            if(!error){
+            const { value, error } = validateMasterData.createLocation.validate(payload)
+            if (!error) {
                 let math = Math.random() * 10000000
                 let newmath = Math.ceil(math)
                 let _id = "LOCATION" + String(newmath)
@@ -274,9 +274,9 @@ const createMasterLocation = {
                     location_address: value.location_address
                 }
                 const createResponse = await prismaClient.tb_master_locations.create({
-                    data : body
+                    data: body
                 });
-                if(!_.isEmpty(createResponse)){
+                if (!_.isEmpty(createResponse)) {
                     baseModel.IBaseNocontentModel = {
                         status: true,
                         status_code: httpResponse.STATUS_CREATED.status_code,
@@ -305,12 +305,123 @@ const createMasterLocation = {
                 return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
             }
         }
-        catch(e){
+        catch (e) {
             console.log(e);
             Boom.badImplementation();
         }
     }
 }
+// TODO: Dont test
+const getAllLocation = {
+    handler: async (request, reply) => {
+        try {
+            const findAll = prismaClient.tb_master_locations.findMany({
+                orderBy: {
+                    location_province: 'asc'
+                }
+            });
+            if (!_.isEmpty(findAll)) {
+                baseModel.IBaseCollectionResultsModel = {
+                    status: true,
+                    status_code: httpResponse.STATUS_200.status_code,
+                    message: httpResponse.STATUS_200.message,
+                    results: findAll
+                }
+                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
+            }
+            else {
+                baseModel.IBaseCollectionResultsModel = {
+                    status: false,
+                    status_code: httpResponse.STATUS_500.message,
+                    message: httpResponse.STATUS_500.message,
+                    results: []
+                }
+                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
+            }
+        }
+        catch (e) {
+            console.log(e);
+            Boom.badImplementation();
+        }
+    }
+}
+
+// TODO: Dont test && Fix bug
+const createEvent = {
+    handler: async (request, reply) => {
+        try {
+            const payload = request.payload
+            const { value, error } = validateEvent.createEventValidates(payload);
+            if (!error) {
+                const todo = 'Waiting_for_admin_approve_01';
+                let math = Math.random() * 10000000
+                let newmath = Math.ceil(math);
+                let _idEvent = 'REG_EVENT' + String(newmath);
+                let _idTransaction = 'TRANS' + String(newmath);
+                const bodyTransaction = {
+                    trans_id: _idTransaction,
+                    trans_todo: todo,
+                    trans_status: "01",
+                    auth_id: value.auth_id
+                }
+                const transactionResponse = prismaClient.tb_transactions.create({
+                    data: bodyTransaction
+                });
+
+                const eventResponse = prismaClient.tb_register_running_events.create({
+                    data: {
+                        reg_event_id: _idEvent,
+                        reg_event_amount: value.reg_event_amount,
+                        reg_event_detail: value.reg_event_detail,
+                        reg_event_distance: value.reg_event_distance,
+                        reg_event_due_date: value.reg_event_due_date,
+                        reg_event_name: value.reg_event_name,
+                        reg_event_path_img: value.reg_event_path_img,
+                        reg_event_price: parseFloat(value.reg_event_price).toFixed(2),
+                        reg_event_status: '01',
+                        location_id: value.location_id,
+                        trans_id: (await transactionResponse).id
+                    }
+                })
+                const t = await prismaClient.$transaction([
+                    transactionResponse, eventResponse
+                ]);
+                if (!_.isEmpty(t)) {
+                    baseModel.IBaseNocontentModel = {
+                        status: true,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
+                        message: httpResponse.STATUS_CREATED.message,
+                        error_message: '',
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                }
+                else {
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_500.status_code,
+                        message: httpResponse.STATUS_500.message,
+                        error_message: '',
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                }
+            }
+            else {
+                baseModel.IBaseNocontentModel = {
+                    status: false,
+                    status_code: httpResponse.STATUS_400.status_code,
+                    message: httpResponse.STATUS_400.message,
+                    error_message: httpResponse.STATUS_400.message,
+                }
+                return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+            }
+        }
+        catch (e) {
+            console.log(e);
+            Boom.badImplementation();
+        }
+    }
+}
+
 module.exports = {
     //Admin
     createAdmin,
@@ -319,5 +430,9 @@ module.exports = {
     deleteAdmin,
 
     //MasterData 
-    createMasterLocation
+    createMasterLocation,
+    getAllLocation,
+
+    //Event 
+    createEvent
 }
