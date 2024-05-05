@@ -8,6 +8,11 @@ const routers = [
     },
     {
         method : 'POST',
+        path : '/api/refresh',
+        config : authenticationHandler.refreshToken
+    },
+    {
+        method : 'POST',
         path : '/api/register-members',
         config : authenticationHandler.registerMembers
     },

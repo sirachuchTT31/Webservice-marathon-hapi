@@ -15,7 +15,6 @@ const init = async () => {
             const { isValid, result } = await jwtVerify(token, process.env.ACCESS_TOKEN_SECRET)
             const credentials = { token };
             const artifacts = { ...result };
-            
             if(_.isEmpty(artifacts)){
                 return Boom.unauthorized()
             }

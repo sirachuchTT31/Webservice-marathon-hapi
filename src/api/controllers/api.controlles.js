@@ -107,9 +107,12 @@ const getAllAdmin = {
         try {
             const findAll = await prismaClient.tb_admins.findMany({
                 orderBy: {
-                    createdAt: 'desc'
+                    created_at: 'desc'
                 }
             })
+            const token = request.headers.authorization.replace("Bearer ", "")
+            console.log(token)
+            console.log(await JWT.jwtVerifyRefreshToken(token))
             if (!_.isEmpty(findAll)) {
                 baseModel.IBaseCollectionResultsModel = {
                     status: true,
@@ -121,7 +124,7 @@ const getAllAdmin = {
             }
             else {
                 baseModel.IBaseCollectionResultsModel = {
-                    status: true,
+                    status: false,
                     status_code: httpResponse.STATUS_500.message,
                     message: httpResponse.STATUS_500.message,
                     results: []
@@ -422,6 +425,7 @@ const createEvent = {
         }
     }
 }
+
 
 module.exports = {
     //Admin

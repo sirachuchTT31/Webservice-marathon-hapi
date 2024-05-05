@@ -2,6 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const Boom = require('@hapi/boom');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { generateAccessToken, jwtDecode, generateRefreshToken, jwtVerifyRefreshToken } = require('../../utils/authentication.js')
 const _ = require('underscore');
 const baseResult = require('../../utils/response-base.js');
 const baseModel = require('../../utils/response-model.js');
@@ -25,21 +26,23 @@ const signIn = {
                 const password = findAuthen.password
                 const passwordCompare = await bcrypt.compare(value.password, password)
                 if (passwordCompare === true && findAuthen.access_status === 'Y') {
-                    const responseJWT = {
-                        id : findAuthen.id,
-                        username : findAuthen.username,
-                        name : findAuthen.name,
-                        lastname : findAuthen.lastname
+                    const payloadJWT = {
+                        id: findAuthen.id,
+                        username: findAuthen.username,
+                        name: findAuthen.name,
+                        lastname: findAuthen.lastname
                     }
-                    const token = jwt.sign(responseJWT, process.env.ACCESS_TOKEN_SECRET, { algorithm: 'HS256', expiresIn: 600000000000 })
+                    const token = await generateAccessToken(payloadJWT);
+                    const refreshToken = await generateRefreshToken(payloadJWT);
+                    const tokenDecode = await jwtDecode(token);
                     baseModel.IBaseSingleResultModel = {
                         status: true,
                         status_code: httpResponse.STATUS_200.status_code,
                         message: 'Sign in successfully',
                         result: {
-                            token: token,
-                            payload: responseJWT,
-                            time_out_token: 600000000000
+                            access_token: token,
+                            refresh_token: refreshToken,
+                            payload: tokenDecode,
                         },
                     }
                     return reply.response(await baseResult.IBaseSingleResult(baseModel.IBaseSingleResultModel))
@@ -54,6 +57,51 @@ const signIn = {
                     return reply.response(await baseResult.IBaseSingleResult(baseModel.IBaseSingleResultModel))
                 }
             }
+        }
+        catch (e) {
+            console.error(e)
+            Boom.badImplementation()
+        }
+    }
+}
+
+const refreshToken = {
+    auth: false,
+    handler: async (request, reply) => {
+        try {
+
+            const refreshToken = request.headers.authorization.replace("Bearer ", "");
+            const responseRefreshToken = await jwtVerifyRefreshToken(refreshToken);
+            if (responseRefreshToken.isValid != false) {
+                const findAuthen = await prismaClient.tb_authentications.findFirst({
+                    where : {
+                        username : responseRefreshToken?.payload?.username
+                    }
+                });
+                if(!_.isEmpty(findAuthen)){
+                    const payloadJWT = {
+                        id: findAuthen.id,
+                        username: findAuthen.username,
+                        name: findAuthen.name,
+                        lastname: findAuthen.lastname
+                    }
+                    const accessToken = await generateAccessToken(payloadJWT,process.env.REFRESH_TOKEN_EXPIRATION);
+                    const tokenDecode = await jwtDecode(accessToken);
+                    baseModel.IBaseSingleResultModel = {
+                        status: true,
+                        status_code: httpResponse.STATUS_200.status_code,
+                        message: 'Refresh token successfully',
+                        result: {
+                            access_token: accessToken,
+                            refresh_token: refreshToken,
+                            payload: tokenDecode,
+                        },
+                    }
+                    return reply.response(await baseResult.IBaseSingleResult(baseModel.IBaseSingleResultModel)) 
+                }
+                return Boom.unauthorized()
+            }
+            return Boom.unauthorized()
         }
         catch (e) {
             console.error(e)
@@ -157,24 +205,24 @@ const registerMembers = {
 }
 
 const registerOrganizer = {
-    auth : false ,
+    auth: false,
     handler: async (request, reply) => {
         try {
-            const payload = request.payload 
-            const {value , error} = authenValidate.registerOrganizer.validate(payload)
-            if(!error){
+            const payload = request.payload
+            const { value, error } = authenValidate.registerOrganizer.validate(payload)
+            if (!error) {
                 const findDuplicates = await prismaClient.tb_organizers.findFirst({
-                    where : {
-                        organ_username : value.organ_username
+                    where: {
+                        organ_username: value.organ_username
                     }
                 });
-                if(_.isEmpty(findDuplicates)) {
+                if (_.isEmpty(findDuplicates)) {
                     let math = Math.random() * 10000000
                     let newMath = Math.ceil(math);
                     let _id = "ORGANIZER" + String(newMath);
                     const salt = await bcrypt.genSalt(10);
                     const hash = await bcrypt.hash(value.organ_password, salt);
-                    const bodyOrganizer= {
+                    const bodyOrganizer = {
                         organ_id: _id,
                         organ_username: value.organ_username,
                         organ_password: hash,
@@ -263,6 +311,7 @@ const registerOrganizer = {
 
 module.exports = {
     signIn,
+    refreshToken,
     registerMembers,
     registerOrganizer,
 }
