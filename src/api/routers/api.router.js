@@ -35,7 +35,7 @@ const routers = [
     },
     {
         method : 'POST',
-        path : '/api/create-event',
+        path : '/api/create-event-by-organizer',
         config : Controller.createEvent
     }
 ]

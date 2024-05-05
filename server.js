@@ -3,7 +3,7 @@ const { connectionDatabase } = require('./src/plugin/prisma.js')
 const config = require('./src/config/config.js')
 const _ = require('underscore');
 const Boom = require('@hapi/boom')
-const { jwtVerify } = require('./src/api/authentication/authentication.js')
+const { jwtVerify } = require('./src/utils/authentication.js')
 const init = async () => {
     const server = Hapi.server({
         port: process.env.PORT,

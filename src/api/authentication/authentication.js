@@ -25,14 +25,20 @@ const signIn = {
                 const password = findAuthen.password
                 const passwordCompare = await bcrypt.compare(value.password, password)
                 if (passwordCompare === true && findAuthen.access_status === 'Y') {
-                    const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, { algorithm: 'HS256', expiresIn: 600000000000 })
+                    const responseJWT = {
+                        id : findAuthen.id,
+                        username : findAuthen.username,
+                        name : findAuthen.name,
+                        lastname : findAuthen.lastname
+                    }
+                    const token = jwt.sign(responseJWT, process.env.ACCESS_TOKEN_SECRET, { algorithm: 'HS256', expiresIn: 600000000000 })
                     baseModel.IBaseSingleResultModel = {
                         status: true,
                         status_code: httpResponse.STATUS_200.status_code,
                         message: 'Sign in successfully',
                         result: {
                             token: token,
-                            payload: payload,
+                            payload: responseJWT,
                             time_out_token: 600000000000
                         },
                     }
@@ -254,36 +260,9 @@ const registerOrganizer = {
 //     }
 // }
 
-const jwtVerify = async (token, access_token_secret) => {
-    try {
-        let response = {}
-        let err = null
-        jwt.verify(token, access_token_secret, {
-            algorithms: ['HS256']
-        }, function (err, res) {
-            response = res ? res : {}
-            err = err
-        });
-
-        if (err) {
-            console.log('jwt middleware error')
-        }
-        return {
-            isValid: err ? false : true,
-            result: response
-        }
-    }
-    catch (e) {
-        return {
-            isValid: false,
-            result: {}
-        }
-    }
-}
 
 module.exports = {
     signIn,
     registerMembers,
     registerOrganizer,
-    jwtVerify
 }

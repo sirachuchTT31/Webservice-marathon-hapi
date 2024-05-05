@@ -9,6 +9,7 @@ const httpResponse = require('../../constant/http-response.js')
 const validateAdmin = require('../validate/admin.validate.js')
 const validateMasterData = require('../validate/master-data.validate.js')
 const validateEvent = require('../validate/event.validate.js')
+const JWT = require('../../utils/authentication.js')
 
 //FIXME: Admin
 const createAdmin = {
@@ -41,7 +42,7 @@ const createAdmin = {
                                 role: 'ADMIN',
                                 tb_admins: {
                                     create: {
-                                        admin_id : _id,
+                                        admin_id: _id,
                                         admin_username: payload.admin_username,
                                         admin_password: hash,
                                         admin_name: payload.admin_name,
@@ -346,45 +347,45 @@ const getAllLocation = {
     }
 }
 
-// TODO: Dont test && Fix bug
 const createEvent = {
     handler: async (request, reply) => {
         try {
             const payload = request.payload
-            const { value, error } = validateEvent.createEventValidates(payload);
+            const token = request.headers.authorization
+            const { value, error } = validateEvent.createEventValidates.validate(payload);
+            console.log(error)
             if (!error) {
                 const todo = 'Waiting_for_admin_approve_01';
                 let math = Math.random() * 10000000
                 let newmath = Math.ceil(math);
                 let _idEvent = 'REG_EVENT' + String(newmath);
                 let _idTransaction = 'TRANS' + String(newmath);
-                const bodyTransaction = {
-                    trans_id: _idTransaction,
-                    trans_todo: todo,
-                    trans_status: "01",
-                    auth_id: value.auth_id
-                }
-                const transactionResponse = prismaClient.tb_transactions.create({
-                    data: bodyTransaction
-                });
-
-                const eventResponse = prismaClient.tb_register_running_events.create({
-                    data: {
-                        reg_event_id: _idEvent,
-                        reg_event_amount: value.reg_event_amount,
-                        reg_event_detail: value.reg_event_detail,
-                        reg_event_distance: value.reg_event_distance,
-                        reg_event_due_date: value.reg_event_due_date,
-                        reg_event_name: value.reg_event_name,
-                        reg_event_path_img: value.reg_event_path_img,
-                        reg_event_price: parseFloat(value.reg_event_price).toFixed(2),
-                        reg_event_status: '01',
-                        location_id: value.location_id,
-                        trans_id: (await transactionResponse).id
-                    }
-                })
+                const jwtPayload = await JWT.jwtDecode(token)
                 const t = await prismaClient.$transaction([
-                    transactionResponse, eventResponse
+                    prismaClient.tb_transactions.create({
+                        data: {
+                            trans_id: _idTransaction,
+                            trans_todo: todo,
+                            trans_status: '01',
+                            auth_id: value.auth_id,
+                            created_by : jwtPayload.id,
+                            tb_register_running_events: {
+                                create: {
+                                    reg_event_id: _idEvent,
+                                    reg_event_amount: Number(value.reg_event_amount),
+                                    reg_event_detail: value.reg_event_detail,
+                                    reg_event_distance: value.reg_event_distance,
+                                    reg_event_due_date: new Date(value.reg_event_due_date),
+                                    reg_event_name: value.reg_event_name,
+                                    reg_event_path_img: value.reg_event_path_img,
+                                    reg_event_price: Number(parseFloat(value.reg_event_price).toFixed(2)),
+                                    reg_event_status: '01',
+                                    location_id: Number(value.location_id),
+                                    created_by : jwtPayload.id
+                                }
+                            }
+                        }
+                    })
                 ]);
                 if (!_.isEmpty(t)) {
                     baseModel.IBaseNocontentModel = {
