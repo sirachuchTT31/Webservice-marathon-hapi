@@ -117,8 +117,8 @@ model tb_register_running_events {
   reg_event_distance          String                        @db.VarChar(255)
   reg_event_status            String                        @db.VarChar(100)
   reg_event_path_img          String                        @db.VarChar(255)
-  location_id                 Int                           @unique
-  trans_id                    Int                           @unique
+  location_id                 Int                           
+  trans_id                    Int                           
   created_at                  DateTime                      @default(now()) @db.Timestamp(3)
   updated_at                  DateTime                      @default(now()) @db.Timestamp(3)
   created_by                  Int?
@@ -141,8 +141,8 @@ model tb_register_running_members {
   lastname                     String                         @db.VarChar(100)
   tel                          String                         @db.VarChar(45)
   email                        String                         @db.VarChar(100)
-  reg_event_id                 Int                            @unique
-  trans_id                     Int                            @unique
+  reg_event_id                 Int                            
+  trans_id                     Int                            
   created_at                   DateTime                       @default(now()) @db.Timestamp(3)
   updated_at                   DateTime                       @default(now()) @db.Timestamp(3)
   created_by                   Int?
@@ -161,7 +161,7 @@ model tb_task_approver_organizer_accounts {
   task_apv_organ_status      String        @db.VarChar(255)
   task_apv_organ_reason      String?       @db.VarChar(255)
   task_apv_organ_approver_by String        @db.VarChar(100)
-  organ_id                   Int           @unique
+  organ_id                   Int           
   created_at                 DateTime      @default(now()) @db.Timestamp(3)
   updated_at                 DateTime      @default(now()) @db.Timestamp(3)
   created_by                 Int?
@@ -177,7 +177,7 @@ model tb_task_approver_reg_events {
   task_apv_reg_status        String                     @db.VarChar(255)
   task_apv_reg_approver_by   String                     @db.VarChar(100)
   task_apv_reg_reason        String?                    @db.VarChar(255)
-  reg_event_id               Int                        @unique
+  reg_event_id               Int                        
   created_at                 DateTime                   @default(now()) @db.Timestamp(3)
   updated_at                 DateTime                   @default(now()) @db.Timestamp(3)
   created_by                 Int?
@@ -193,7 +193,7 @@ model tb_task_approver_reg_members {
   task_apv_reg_member_status      String                      @db.VarChar(45)
   task_apv_reg_member_approver_by String                      @db.VarChar(100)
   task_apv_reg_member_reason      String?                     @db.VarChar(255)
-  reg_member_id                   Int                         @unique
+  reg_member_id                   Int                         
   created_at                      DateTime                    @default(now()) @db.Timestamp(3)
   updated_at                      DateTime                    @default(now()) @db.Timestamp(3)
   created_by                      Int?
@@ -208,7 +208,7 @@ model tb_transactions {
   trans_id                    String                        @db.VarChar(100)
   trans_todo                  String                        @db.VarChar(255)
   trans_status                String                        @db.VarChar(100)
-  auth_id                     Int                           @unique
+  auth_id                     Int                        
   created_at                  DateTime                      @default(now()) @db.Timestamp(3)
   updated_at                  DateTime                      @default(now()) @db.Timestamp(3)
   created_by                  Int?
