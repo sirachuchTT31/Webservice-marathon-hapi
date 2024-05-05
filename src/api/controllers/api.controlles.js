@@ -10,6 +10,7 @@ const validateAdmin = require('../validate/admin.validate.js')
 const validateMasterData = require('../validate/master-data.validate.js')
 const validateEvent = require('../validate/event.validate.js')
 const JWT = require('../../utils/authentication.js')
+const Handler = require('../handler/api.handler.js')
 
 //FIXME: Admin
 const createAdmin = {
@@ -371,7 +372,7 @@ const createEvent = {
                             trans_todo: todo,
                             trans_status: '01',
                             auth_id: value.auth_id,
-                            created_by : jwtPayload.id,
+                            created_by: jwtPayload.id,
                             tb_register_running_events: {
                                 create: {
                                     reg_event_id: _idEvent,
@@ -384,7 +385,7 @@ const createEvent = {
                                     reg_event_price: Number(parseFloat(value.reg_event_price).toFixed(2)),
                                     reg_event_status: '01',
                                     location_id: Number(value.location_id),
-                                    created_by : jwtPayload.id
+                                    created_by: jwtPayload.id
                                 }
                             }
                         }
@@ -426,6 +427,107 @@ const createEvent = {
     }
 }
 
+const getAllEvent = {
+    handler: async (request, reply) => {
+        try {
+            const t = await prismaClient.$transaction(async (tx) => {
+                let currentDate = new Date()
+                const findAll = await tx.tb_register_running_events.findMany({
+                    where: {
+                        AND: [
+                            {
+                                reg_event_status: {
+                                    equals: '02'
+                                },
+                            },
+                            {
+                                reg_event_due_date: {
+                                    gte: currentDate
+                                }
+                            }
+
+                        ]
+                    },
+                    include: {
+                        tb_master_locations: {
+                            select: {
+                                id: true,
+                                location_id: true,
+                                location_province: true,
+                                location_address: true,
+                                location_zipcode: true,
+                                location_district: true
+                            }
+                        }
+                    }
+                });
+
+                //Auto update due date status 01 Cancel 
+                const findWhereDuedate = await tx.tb_register_running_events.findMany({
+                    where: {
+                        AND: [
+                            {
+                                reg_event_due_date: {
+                                    lt: currentDate
+                                },
+                            },
+                            {
+                                reg_event_status: {
+                                    equals: '01'
+                                }
+                            }
+                        ]
+                    },
+                })
+                if (!_.isEmpty(findWhereDuedate)) {
+                    for (const item of findWhereDuedate) {
+                        await tx.tb_register_running_events.update({
+                            where: {
+                                id: item.id
+                            },
+                            data: {
+                                reg_event_status: '04',
+                                tb_transactions: {
+                                    update: {
+                                        trans_status: '04'
+                                    }
+                                }
+                            },
+                            include : {
+                                tb_transactions : true
+                            }
+                        });
+                    }
+                }
+
+                return _.isEmpty(findAll) ? null : findAll
+            })
+            if (!_.isEmpty(t)) {
+                baseModel.IBaseCollectionResultsModel = {
+                    status: true,
+                    status_code: httpResponse.STATUS_200.status_code,
+                    message: httpResponse.STATUS_200.message,
+                    results: t
+                }
+                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
+            }
+            else {
+                baseModel.IBaseCollectionResultsModel = {
+                    status: false,
+                    status_code: httpResponse.STATUS_500.message,
+                    message: httpResponse.STATUS_500.message,
+                    results: []
+                }
+                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
+            }
+        }
+        catch (e) {
+            console.log(e);
+            Boom.badImplementation();
+        }
+    }
+}
+
 
 module.exports = {
     //Admin
@@ -439,5 +541,6 @@ module.exports = {
     getAllLocation,
 
     //Event 
-    createEvent
+    createEvent,
+    getAllEvent
 }

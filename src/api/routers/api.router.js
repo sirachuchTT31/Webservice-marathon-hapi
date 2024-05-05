@@ -33,10 +33,16 @@ const routers = [
         path : '/api/get-all-master-location',
         config : Controller.getAllLocation
     },
+    //FIXME: Event
     {
         method : 'POST',
         path : '/api/create-event',
         config : Controller.createEvent
+    },
+    {
+        method : 'GET',
+        path : '/api/get-all-event',
+        config : Controller.getAllEvent
     }
 ]
 
