@@ -123,13 +123,13 @@ model tb_register_running_events {
   updated_at                  DateTime                      @default(now()) @db.Timestamp(3)
   created_by                  Int?
   updated_by                  Int?
-  tb_master_locations         tb_master_locations           @relation(fields: [location_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "tb_register_running_events_ibfk_1")
-  tb_transactions             tb_transactions               @relation(fields: [trans_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "tb_register_running_events_ibfk_2")
+  tb_master_locations         tb_master_locations           @relation(fields: [location_id], references: [id])
+  tb_transactions             tb_transactions               @relation(fields: [trans_id], references: [id])
   tb_register_running_members tb_register_running_members[]
   tb_task_approver_reg_events tb_task_approver_reg_events[]
 
-  @@index([location_id], map: "location_id")
-  @@index([trans_id], map: "trans_id")
+  @@index([location_id])
+  @@index([trans_id])
 }
 
 model tb_register_running_members {
@@ -147,12 +147,12 @@ model tb_register_running_members {
   updated_at                   DateTime                       @default(now()) @db.Timestamp(3)
   created_by                   Int?
   updated_by                   Int?
-  tb_register_running_events   tb_register_running_events     @relation(fields: [reg_event_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "tb_register_running_members_ibfk_1")
-  tb_transactions              tb_transactions                @relation(fields: [trans_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "tb_register_running_members_ibfk_2")
+  tb_register_running_events   tb_register_running_events     @relation(fields: [reg_event_id], references: [id])
+  tb_transactions              tb_transactions                @relation(fields: [trans_id], references: [id])
   tb_task_approver_reg_members tb_task_approver_reg_members[]
 
-  @@index([reg_event_id], map: "reg_event_id")
-  @@index([trans_id], map: "trans_id")
+  @@index([reg_event_id])
+  @@index([trans_id])
 }
 
 model tb_task_approver_organizer_accounts {
@@ -166,9 +166,9 @@ model tb_task_approver_organizer_accounts {
   updated_at                 DateTime      @default(now()) @db.Timestamp(3)
   created_by                 Int?
   updated_by                 Int?
-  tb_organizers              tb_organizers @relation(fields: [organ_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "organ_id")
+  tb_organizers              tb_organizers @relation(fields: [organ_id], references: [id])
 
-  @@index([organ_id], map: "organ_id_idx")
+  @@index([organ_id])
 }
 
 model tb_task_approver_reg_events {
@@ -182,9 +182,9 @@ model tb_task_approver_reg_events {
   updated_at                 DateTime                   @default(now()) @db.Timestamp(3)
   created_by                 Int?
   updated_by                 Int?
-  tb_register_running_events tb_register_running_events @relation(fields: [reg_event_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "task_approver_reg_events_ibfk_1")
+  tb_register_running_events tb_register_running_events @relation(fields: [reg_event_id], references: [id])
 
-  @@index([reg_event_id], map: "reg_event_id")
+  @@index([reg_event_id])
 }
 
 model tb_task_approver_reg_members {
@@ -198,9 +198,9 @@ model tb_task_approver_reg_members {
   updated_at                      DateTime                    @default(now()) @db.Timestamp(3)
   created_by                      Int?
   updated_by                      Int?
-  tb_register_running_members     tb_register_running_members @relation(fields: [reg_member_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "tb_task_approver_reg_members_ibfk_1")
+  tb_register_running_members     tb_register_running_members @relation(fields: [reg_member_id], references: [id])
 
-  @@index([reg_member_id], map: "reg_member_id")
+  @@index([reg_member_id])
 }
 
 model tb_transactions {
@@ -215,7 +215,7 @@ model tb_transactions {
   updated_by                  Int?
   tb_register_running_events  tb_register_running_events[]
   tb_register_running_members tb_register_running_members[]
-  tb_authentications          tb_authentications            @relation(fields: [auth_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "tb_transactions_ibfk_1")
+  tb_authentications          tb_authentications            @relation(fields: [auth_id], references: [id])
 
-  @@index([auth_id], map: "auth_id")
+  @@index([auth_id])
 }
