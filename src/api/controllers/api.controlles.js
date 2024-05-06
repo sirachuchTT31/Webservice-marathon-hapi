@@ -427,6 +427,22 @@ const createEvent = {
     }
 }
 
+const uploadImageEvent = {
+    handler : async (request , reply) => {
+        try{
+            const payload = request.payload;
+            const id = payload.id
+            // const pathImage = await Handler.HandleruploadImageEvent(payload)
+            return {
+                status : true
+            }
+        }
+        catch(e){
+
+        }
+    },
+}
+
 const getAllEvent = {
     handler: async (request, reply) => {
         try {
@@ -542,5 +558,6 @@ module.exports = {
 
     //Event 
     createEvent,
-    getAllEvent
+    getAllEvent,
+    uploadImageEvent
 }

@@ -23,7 +23,8 @@ module.exports = {
         // connectionDatabase,
         Bearertoken,
         Jwt2,
-        inert.plugin,
+        // inert,
+        require('@hapi/inert'),
         Basic,
     ]
 }
