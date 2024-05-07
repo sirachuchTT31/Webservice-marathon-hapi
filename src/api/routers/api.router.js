@@ -1,11 +1,10 @@
 const Controller = require('../controllers/api.controlles.js')
-
 const routers = [
     //FIXME: Admin
     {
         method: 'POST',
         path: '/api/create-admin',
-        config: Controller.createAdmin
+        config: Controller.createAdmin,
     },
     {
         method: 'GET',
@@ -55,6 +54,11 @@ const routers = [
         method: 'GET',
         path: '/api/get-all-event',
         config: Controller.getAllEvent
+    },
+    {
+        method : 'POST',
+        path : '/api/test-encrypt',
+        config : Controller.cryptTest
     }
 ]
 

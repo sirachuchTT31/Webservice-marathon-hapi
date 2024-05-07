@@ -10,7 +10,8 @@ const validateAdmin = require('../validate/admin.validate.js')
 const validateMasterData = require('../validate/master-data.validate.js')
 const validateEvent = require('../validate/event.validate.js')
 const JWT = require('../../utils/authentication.js')
-const Handler = require('../handler/api.handler.js')
+const Handler = require('../handler/api.handler.js');
+const cryptLib = require('../../utils/crypt-lib.js')
 
 //FIXME: Admin
 const createAdmin = {
@@ -356,7 +357,7 @@ const createEvent = {
         try {
             const payload = request.payload
             const token = request.headers.authorization
-            const { value, error } = validateEvent.createEventValidates.validate(payload);
+            const { value, error } = validateEvent.createEventValidate.validate(payload);
             console.log(error)
             if (!error) {
                 const todo = 'Waiting_for_admin_approve_01';
@@ -428,16 +429,16 @@ const createEvent = {
 }
 
 const uploadImageEvent = {
-    handler : async (request , reply) => {
-        try{
+    handler: async (request, reply) => {
+        try {
             const payload = request.payload;
             const id = payload.id
             // const pathImage = await Handler.HandleruploadImageEvent(payload)
             return {
-                status : true
+                status: true
             }
         }
-        catch(e){
+        catch (e) {
 
         }
     },
@@ -509,8 +510,8 @@ const getAllEvent = {
                                     }
                                 }
                             },
-                            include : {
-                                tb_transactions : true
+                            include: {
+                                tb_transactions: true
                             }
                         });
                     }
@@ -544,6 +545,24 @@ const getAllEvent = {
     }
 }
 
+const cryptTest = {
+    auth : false,
+    handler: async (request, reply) => {
+        try {
+            const payload = request.payload.id
+            const cipher = await cryptLib.encryptAES(payload)
+            const orginal = await cryptLib.decryptAES(cipher)
+            return  {
+                encrypt : cipher,
+                decrypt : orginal
+            }
+        }
+        catch (e) {
+            console.log(e)
+        }
+    }
+}
+
 
 module.exports = {
     //Admin
@@ -559,5 +578,8 @@ module.exports = {
     //Event 
     createEvent,
     getAllEvent,
-    uploadImageEvent
+    uploadImageEvent,
+
+    //Test
+    cryptTest
 }

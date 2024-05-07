@@ -1,6 +1,6 @@
 const Joi = require('joi') 
 
-const createEventValidates = Joi.object().keys({
+const createEventValidate = Joi.object().keys({
     reg_event_name : Joi.string().required(),
     reg_event_due_date : Joi.string().required(),
     reg_event_price : Joi.any().required(),
@@ -14,5 +14,5 @@ const createEventValidates = Joi.object().keys({
 
 
 module.exports = {
-    createEventValidates
+    createEventValidate
 }
