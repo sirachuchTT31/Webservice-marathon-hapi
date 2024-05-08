@@ -23,6 +23,15 @@ const signIn = {
                         username: value?.username
                     }
                 })
+                if(_.isEmpty(findAuthen)){
+                    baseModel.IBaseSingleResultModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_200.status_code,
+                        message: 'Sign in failed',
+                        result: null
+                    }
+                    return reply.response(await baseResult.IBaseSingleResult(baseModel.IBaseSingleResultModel))
+                }
                 const password = findAuthen.password
                 const passwordCompare = await bcrypt.compare(value.password, password)
                 if (passwordCompare === true && findAuthen.access_status === 'Y') {
@@ -50,12 +59,21 @@ const signIn = {
                 else {
                     baseModel.IBaseSingleResultModel = {
                         status: false,
-                        status_code: httpResponse.STATUS_500.status_code,
+                        status_code: httpResponse.STATUS_200.status_code,
                         message: 'Sign in failed',
                         result: null
                     }
                     return reply.response(await baseResult.IBaseSingleResult(baseModel.IBaseSingleResultModel))
                 }
+            }
+            else {
+                baseModel.IBaseNocontentModel = {
+                    status: false,
+                    status_code: httpResponse.STATUS_400.status_code,
+                    message: httpResponse.STATUS_400.message,
+                    error_message: httpResponse.STATUS_400.message,
+                }
+                return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
             }
         }
         catch (e) {
