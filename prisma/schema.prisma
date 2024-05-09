@@ -24,11 +24,13 @@ model User {
   updated_by             Int?
   ApprovedAccount        ApprovedAccount[]
   Transaction            Transaction[]
-  UsersOnEventJoin       UsersOnEventJoin[]
+  UserOnEventJoin        UserOnEventJoin[]
   LoginLog               LoginLog[]
-  ApprovedJoinEvent      ApprovedJoinEvent[]
+  ApprovedEventJoin      ApprovedEventJoin[]
   Invoice                Invoice[]
   Notification           Notification[]
+
+  @@map("user")
 }
 
 model LoginLog {
@@ -39,6 +41,8 @@ model LoginLog {
   User        User      @relation(fields: [user_id], references: [id])
   created_at  DateTime  @default(now()) @db.Timestamp(3)
   updated_at  DateTime? @default(now()) @updatedAt @db.Timestamp(3)
+
+  @@map("login_log")
 }
 
 model MasterLocation {
@@ -52,6 +56,8 @@ model MasterLocation {
   updated_at DateTime @default(now()) @updatedAt @db.Timestamp(3)
   updated_by Int?
   Event      Event[]
+
+  @@map("master_location")
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -82,9 +88,10 @@ model Event {
 
   @@index([location_id])
   @@index([trans_id])
+  @@map("event")
 }
 
-model UsersOnEventJoin {
+model UserOnEventJoin {
   EventJoin     EventJoin @relation(fields: [event_join_id], references: [id])
   status_code   String?   @db.VarChar(2)
   event_join_id Int
@@ -96,6 +103,7 @@ model UsersOnEventJoin {
   updated_by    Int?
 
   @@id([event_join_id, user_id])
+  @@map("user_on_event_join")
 }
 
 model EventJoin {
@@ -109,12 +117,13 @@ model EventJoin {
   updated_by        Int?
   Event             Event?              @relation(fields: [event_id], references: [id])
   Transaction       Transaction         @relation(fields: [trans_id], references: [id])
-  ApprovedJoinEvent ApprovedJoinEvent[]
-  UsersOnEventJoin  UsersOnEventJoin[]
+  ApprovedEventJoin ApprovedEventJoin[]
+  UserOnEventJoin   UserOnEventJoin[]
   RecordDataEvent   RecordDataEvent[]
 
   @@index([event_id])
   @@index([trans_id])
+  @@map("event_join")
 }
 
 model ApprovedAccount {
@@ -130,6 +139,7 @@ model ApprovedAccount {
   user_id     Int?
 
   @@index([user_id])
+  @@map("approved_account")
 }
 
 model ApprovedEvent {
@@ -145,9 +155,10 @@ model ApprovedEvent {
   Event       Event?   @relation(fields: [event_id], references: [id])
 
   @@index([event_id])
+  @@map("approved_event")
 }
 
-model ApprovedJoinEvent {
+model ApprovedEventJoin {
   id            Int        @id @default(autoincrement())
   status_code   String?    @db.VarChar(2)
   approved_by   Int?
@@ -162,6 +173,7 @@ model ApprovedJoinEvent {
   User          User?      @relation(fields: [user_id], references: [id])
 
   @@index([event_join_id])
+  @@map("approved_event_join")
 }
 
 model Transaction {
@@ -178,6 +190,7 @@ model Transaction {
   user       User       @relation(fields: [user_id], references: [id])
 
   @@index([user_id])
+  @@map("transaction")
 }
 
 model Invoice {
@@ -194,6 +207,8 @@ model Invoice {
   updated_at   DateTime @default(now()) @updatedAt @db.Timestamp(3)
   updated_by   Int?
   Payment      Payment?
+
+  @@map("invoice")
 }
 
 model Notification {
@@ -206,6 +221,8 @@ model Notification {
   created_by           Int?
   updated_at           DateTime @default(now()) @updatedAt @db.Timestamp(3)
   updated_by           Int?
+
+  @@map("notification")
 }
 
 model Payment {
@@ -220,6 +237,8 @@ model Payment {
   event_id            Int?
   Event               Event?  @relation(fields: [event_id], references: [id])
   Invoice             Invoice @relation(fields: [invoice_id], references: [id])
+
+  @@map("payment")
 }
 
 model RecordDataEvent {
@@ -231,4 +250,6 @@ model RecordDataEvent {
   event_join_id Int?
   Event         Event?     @relation(fields: [event_id], references: [id])
   EventJoin     EventJoin? @relation(fields: [event_join_id], references: [id])
+
+  @@map("record_data_event")
 }
