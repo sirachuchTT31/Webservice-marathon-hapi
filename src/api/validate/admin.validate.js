@@ -1,30 +1,22 @@
 const Joi = require('joi')
 
 const createAdminValidate = Joi.object().keys({
-    admin_username: Joi.string().required(),
-    admin_password: Joi.string().required(),
-    admin_name: Joi.string().required(),
-    admin_lastname: Joi.string().required(),
-    admin_email: Joi.string().required(),
-    admin_tel : Joi.string(),
-    admin_address : Joi.string(),
-    admin_email : Joi.string(),
-    admin_avatar : Joi.string().empty(''),
-    
+    username: Joi.string().required(),
+    password: Joi.string().required(),
+    name: Joi.string().required(),
+    lastname: Joi.string().required(),
+    email: Joi.string().required(),
 });
 
 const updateAdminValidate = Joi.object().keys({
-    admin_id :Joi.string().required(),
-    admin_name: Joi.string().required(),
-    admin_lastname: Joi.string().required(),
-    admin_tel : Joi.string(),
-    admin_address : Joi.string(),
-    admin_email : Joi.string(),
-    admin_avatar : Joi.string().empty(''),
+    id: Joi.number().required(),
+    name: Joi.string().required(),
+    lastname: Joi.string().required(),
+    email: Joi.string().required(),
 });
 
 const deleteAdminValidate = Joi.object().keys({
-    admin_id : Joi.string().required()
+    id: Joi.string().required()
 })
 module.exports = {
     createAdminValidate,

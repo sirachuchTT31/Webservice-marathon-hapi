@@ -20,47 +20,31 @@ const createAdmin = {
             const payload = request.payload
             const { value, error } = validateAdmin.createAdminValidate.validate(payload)
             if (!error) {
-                const findDuplicates = await prismaClient.tb_admins.findFirst({
+                const token = request.headers.authorization.replace("Bearer ", "")
+                const jwtDecode = await JWT.jwtDecode(token)
+                const findDuplicates = await prismaClient.user.findFirst({
                     where: {
-                        admin_username: value.admin_username
+                        username: value.username,
+                        role: 'admin'
                     }
                 })
                 if (_.isEmpty(findDuplicates)) {
-                    let math = Math.random() * 10000000
-                    let newMath = Math.ceil(math);
-                    let _id = "ADMIN" + String(newMath);
                     let salt = await bcrypt.genSalt(10);
-                    let hash = await bcrypt.hash(value.admin_password, salt)
-                    const t = await prismaClient.$transaction([
-                        prismaClient.tb_authentications.create({
-                            data: {
-                                auth_id: _id,
-                                username: payload.admin_username,
-                                password: hash,
-                                name: payload.admin_name,
-                                lastname: payload.admin_lastname,
-                                avatar: payload.admin_avatar,
-                                access_status: 'N',
-                                role: 'ADMIN',
-                                tb_admins: {
-                                    create: {
-                                        admin_id: _id,
-                                        admin_username: payload.admin_username,
-                                        admin_password: hash,
-                                        admin_name: payload.admin_name,
-                                        admin_lastname: payload.admin_lastname,
-                                        admin_tel: payload.admin_tel,
-                                        admin_address: payload.admin_address,
-                                        admin_email: payload.admin_email,
-                                        admin_avatar: payload.admin_avatar,
-                                        admin_status: 'N',
-                                        role: 'ADMIN',
-                                    }
-                                }
-                            }
-                        })
-                    ])
-                    if (!_.isEmpty(t)) {
+                    let hash = await bcrypt.hash(value.password, salt)
+                    const response = await prismaClient.user.create({
+                        data: {
+                            username: value.username,
+                            password: hash,
+                            name: value.name,
+                            lastname: value.lastname,
+                            email: value.email,
+                            avatar: 'https://avataaars.io/?avatarStyle=Transparent&topType=ShortHairShortCurly&accessoriesType=Round&hairColor=BrownDark&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light',
+                            access_status: 'Y',
+                            role: 'admin',
+                            created_by: jwtDecode.id
+                        }
+                    })
+                    if (!_.isEmpty(response)) {
                         baseModel.IBaseNocontentModel = {
                             status: true,
                             status_code: httpResponse.STATUS_CREATED.status_code,
@@ -107,14 +91,14 @@ const createAdmin = {
 const getAllAdmin = {
     handler: async (request, reply) => {
         try {
-            const findAll = await prismaClient.tb_admins.findMany({
+            const findAll = await prismaClient.user.findMany({
+                where: {
+                    role: 'admin'
+                },
                 orderBy: {
                     created_at: 'desc'
                 }
             })
-            const token = request.headers.authorization.replace("Bearer ", "")
-            console.log(token)
-            console.log(await JWT.jwtVerifyRefreshToken(token))
             if (!_.isEmpty(findAll)) {
                 baseModel.IBaseCollectionResultsModel = {
                     status: true,
@@ -146,32 +130,21 @@ const updateAdmin = {
             const payload = request.payload
             const { value, error } = validateAdmin.updateAdminValidate.validate(payload)
             if (!error) {
-                const t = await prismaClient.$transaction([
-                    prismaClient.tb_admins.update({
-                        where: {
-                            admin_id: value.admin_id
-                        },
-                        data: {
-                            admin_name: value.admin_name ? value.admin_name : '',
-                            admin_lastname: value.admin_lastname ? value.admin_lastname : '',
-                            admin_tel: value.admin_tel ? value.admin_tel : '',
-                            admin_address: value.admin_address ? value.admin_address : '',
-                            admin_email: value.admin_email ? value.admin_email : '',
-                            admin_avatar: value.admin_avatar ? value.admin_avatar : '',
-                        }
-                    }),
-                    prismaClient.tb_authentications.update({
-                        where: {
-                            auth_id: value.admin_id
-                        },
-                        data: {
-                            name: value.admin_name ? value.admin_name : '',
-                            lastname: value.admin_lastname ? value.admin_lastname : '',
-                            avatar: value.admin_avatar ? value.admin_avatar : '',
-                        }
-                    })
-                ]);
-                if (!_.isEmpty(t)) {
+                const token = request.headers.authorization.replace("Bearer ", "")
+                const jwtDecode = await JWT.jwtDecode(token)
+                const response = await prismaClient.user.update({
+                    where: {
+                        id: value.id,
+                        role: 'admin'
+                    },
+                    data: {
+                        name: value.name,
+                        lastname: value.lastname,
+                        email: value.email,
+                        updated_by: jwtDecode.id
+                    }
+                })
+                if (!_.isEmpty(response)) {
                     baseModel.IBaseNocontentModel = {
                         status: true,
                         status_code: httpResponse.STATUS_CREATED.status_code,
@@ -213,19 +186,12 @@ const deleteAdmin = {
             const payload = request.payload
             const { value, error } = validateAdmin.deleteAdminValidate.validate(payload)
             if (!error) {
-                const t = await prismaClient.$transaction([
-                    prismaClient.tb_admins.delete({
-                        where: {
-                            admin_id: value.admin_id
-                        }
-                    }),
-                    prismaClient.tb_authentications.delete({
-                        where: {
-                            auth_id: value.admin_id
-                        }
-                    })
-                ]);
-                if (!_.isEmpty(t)) {
+                const response = await prismaClient.user.delete({
+                    where: {
+                        id: value.id
+                    }
+                })
+                if (!_.isEmpty(response)) {
                     baseModel.IBaseNocontentModel = {
                         status: true,
                         status_code: httpResponse.STATUS_CREATED.status_code,
@@ -266,23 +232,21 @@ const deleteAdmin = {
 const createMasterLocation = {
     handler: async (request, reply) => {
         try {
+            const token = request.headers.authorization.replace("Bearer ", "")
+            const jwtDecode = await JWT.jwtDecode(token)
             const payload = request.payload
-            const { value, error } = validateMasterData.createLocation.validate(payload)
+            const { value, error } = validateMasterData.createMasterLocation.validate(payload)
             if (!error) {
-                let math = Math.random() * 10000000
-                let newmath = Math.ceil(math)
-                let _id = "LOCATION" + String(newmath)
-                const body = {
-                    location_id: _id,
-                    location_province: value.location_province,
-                    location_district: value.location_district,
-                    location_zipcode: value.location_zipcode,
-                    location_address: value.location_address
-                }
-                const createResponse = await prismaClient.tb_master_locations.create({
-                    data: body
+                const response = await prismaClient.masterLocation.create({
+                    data: {
+                        province : value.province,
+                        address : value.address,
+                        district : value.district,
+                        zipcode : value.zipcode,
+                        created_by : jwtDecode.id
+                    }
                 });
-                if (!_.isEmpty(createResponse)) {
+                if (!_.isEmpty(response)) {
                     baseModel.IBaseNocontentModel = {
                         status: true,
                         status_code: httpResponse.STATUS_CREATED.status_code,
@@ -321,9 +285,9 @@ const createMasterLocation = {
 const getAllLocation = {
     handler: async (request, reply) => {
         try {
-            const findAll = prismaClient.tb_master_locations.findMany({
+            const findAll = prismaClient.masterLocation.findMany({
                 orderBy: {
-                    location_province: 'asc'
+                    province: 'asc'
                 }
             });
             if (!_.isEmpty(findAll)) {
@@ -358,33 +322,24 @@ const createEvent = {
             const payload = request.payload
             const token = request.headers.authorization
             const { value, error } = validateEvent.createEventValidate.validate(payload);
-            console.log(error)
             if (!error) {
-                const todo = 'Waiting_for_admin_approve_01';
-                let math = Math.random() * 10000000
-                let newmath = Math.ceil(math);
-                let _idEvent = 'REG_EVENT' + String(newmath);
-                let _idTransaction = 'TRANS' + String(newmath);
                 const jwtPayload = await JWT.jwtDecode(token)
                 const t = await prismaClient.$transaction([
-                    prismaClient.tb_transactions.create({
+                    prismaClient.transaction.create({
                         data: {
-                            trans_id: _idTransaction,
-                            trans_todo: todo,
-                            trans_status: '01',
-                            auth_id: value.auth_id,
+                            status : '01',
+                            user_id: value.user_id,
                             created_by: jwtPayload.id,
-                            tb_register_running_events: {
+                            Event: {
                                 create: {
-                                    reg_event_id: _idEvent,
-                                    reg_event_amount: Number(value.reg_event_amount),
-                                    reg_event_detail: value.reg_event_detail,
-                                    reg_event_distance: value.reg_event_distance,
-                                    reg_event_due_date: new Date(value.reg_event_due_date),
-                                    reg_event_name: value.reg_event_name,
-                                    reg_event_path_img: value.reg_event_path_img,
-                                    reg_event_price: Number(parseFloat(value.reg_event_price).toFixed(2)),
-                                    reg_event_status: '01',
+                                    name : value.name,
+                                    price : Number(parseFloat(value.price).toFixed(2)),
+                                    max_amount : Number(value.max_amount),
+                                    detail : value.detail,
+                                    distance : value.distance,
+                                    due_date : new Date(value.due_date),
+                                    path_image : '',
+                                    status_code : '01',
                                     location_id: Number(value.location_id),
                                     created_by: jwtPayload.id
                                 }
@@ -546,15 +501,15 @@ const getAllEvent = {
 }
 
 const cryptTest = {
-    auth : false,
+    auth: false,
     handler: async (request, reply) => {
         try {
             const payload = request.payload.id
             const cipher = await cryptLib.encryptAES(payload)
             const orginal = await cryptLib.decryptAES(cipher)
-            return  {
-                encrypt : cipher,
-                decrypt : orginal
+            return {
+                encrypt: cipher,
+                decrypt: orginal
             }
         }
         catch (e) {
