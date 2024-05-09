@@ -7,215 +7,228 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model tb_admins {
-  id                 Int                @id @default(autoincrement())
-  admin_id           String             @db.VarChar(100)
-  admin_username     String             @db.VarChar(255)
-  admin_password     String             @db.VarChar(100)
-  admin_name         String             @db.VarChar(100)
-  admin_lastname     String             @db.VarChar(100)
-  admin_tel          String             @db.VarChar(10)
-  admin_address      String             @db.VarChar(255)
-  admin_email        String             @db.VarChar(100)
-  admin_avatar       String             @db.LongText
-  admin_status       String             @db.VarChar(2)
-  role               String             @db.VarChar(20)
-  auth_id            Int                @unique
-  created_at         DateTime           @default(now()) @db.Timestamp(3)
-  created_by         Int?
-  updated_at         DateTime           @default(now()) @db.Timestamp(3)
-  updated_by         Int?
-  tb_authentications tb_authentications @relation(fields: [auth_id], references: [id])
+model User {
+  id                     Int                 @id @default(autoincrement())
+  username               String              @db.VarChar(100)
+  password               String              @db.VarChar(100)
+  name                   String              @db.VarChar(100)
+  lastname               String              @db.VarChar(100)
+  email                  String              @db.VarChar(100)
+  avatar                 String              @db.LongText
+  access_status          String              @db.VarChar(2)
+  role                   String              @db.VarChar(50)
+  is_active_notification Boolean             @default(true)
+  created_at             DateTime            @default(now()) @db.Timestamp(3)
+  created_by             Int?
+  updated_at             DateTime            @default(now()) @updatedAt @db.Timestamp(3)
+  updated_by             Int?
+  ApprovedAccount        ApprovedAccount[]
+  Transaction            Transaction[]
+  UsersOnEventJoin       UsersOnEventJoin[]
+  LoginLog               LoginLog[]
+  ApprovedJoinEvent      ApprovedJoinEvent[]
+  Invoice                Invoice[]
+  Notification           Notification[]
 }
 
-model tb_authentications {
-  id              Int              @id @default(autoincrement())
-  auth_id         String           @db.VarChar(100)
-  username        String           @db.VarChar(100)
-  password        String           @db.VarChar(100)
-  name            String           @db.VarChar(100)
-  lastname        String           @db.VarChar(100)
-  avatar          String           @db.LongText
-  access_status   String           @db.VarChar(2)
-  role            String           @db.VarChar(50)
-  created_at      DateTime         @default(now()) @db.Timestamp(3)
-  created_by      Int?
-  updated_at      DateTime         @default(now()) @db.Timestamp(3)
-  updated_by      Int?
-  tb_admins       tb_admins?
-  tb_members      tb_members?
-  tb_organizers   tb_organizers?
-  tb_transactions tb_transactions[]
+model LoginLog {
+  id          Int       @id @default(autoincrement())
+  logout_time DateTime?
+  type_login  String    @db.VarChar(100)
+  user_id     Int
+  User        User      @relation(fields: [user_id], references: [id])
+  created_at  DateTime  @default(now()) @db.Timestamp(3)
+  updated_at  DateTime? @default(now()) @updatedAt @db.Timestamp(3)
 }
 
-model tb_master_locations {
-  id                         Int                         @id @default(autoincrement())
-  location_id                String                      @db.VarChar(100)
-  location_province          String                      @db.VarChar(255)
-  location_district          String                      @db.VarChar(255)
-  location_zipcode           String                      @db.VarChar(50)
-  location_address           String                      @db.VarChar(255)
-  created_at                 DateTime                    @default(now()) @db.Timestamp(3)
-  created_by                 Int?
-  updated_at                 DateTime                    @default(now()) @db.Timestamp(3)
-  updated_by                 Int?
-  tb_register_running_events tb_register_running_events[]
-}
-
-model tb_members {
-  id                 Int                @id @default(autoincrement())
-  member_id          String             @db.VarChar(100)
-  member_username    String             @db.VarChar(100)
-  member_password    String             @db.VarChar(100)
-  member_name        String             @db.VarChar(100)
-  member_lastname    String             @db.VarChar(100)
-  member_tel         String             @db.VarChar(10)
-  member_address     String             @db.VarChar(255)
-  member_email       String             @db.VarChar(100)
-  member_avatar      String             @db.LongText
-  member_status      String             @db.VarChar(2)
-  role               String             @db.VarChar(20)
-  auth_id            Int                @unique
-  created_at         DateTime           @default(now()) @db.Timestamp(3)
-  created_by         Int?
-  updated_at         DateTime           @default(now()) @db.Timestamp(3)
-  updated_by         Int?
-  tb_authentications tb_authentications @relation(fields: [auth_id], references: [id])
-}
-
-model tb_organizers {
-  id                                  Int                                  @id @default(autoincrement())
-  organ_id                            String                               @db.VarChar(100)
-  organ_username                      String                               @db.VarChar(100)
-  organ_password                      String                               @db.VarChar(100)
-  organ_name                          String                               @db.VarChar(100)
-  organ_lastname                      String                               @db.VarChar(100)
-  organ_tel                           String                               @db.VarChar(10)
-  organ_address                       String                               @db.VarChar(255)
-  organ_email                         String                               @db.VarChar(100)
-  organ_avatar                        String                               @db.LongText
-  organ_status                        String                               @db.VarChar(2)
-  role                                String                               @db.VarChar(20)
-  auth_id                             Int                                  @unique
-  created_at                          DateTime                             @default(now()) @db.Timestamp(3)
-  created_by                          Int?
-  updated_at                          DateTime                             @default(now()) @db.Timestamp(3)
-  updated_by                          Int?
-  tb_authentications                  tb_authentications                   @relation(fields: [auth_id], references: [id])
-  tb_task_approver_organizer_accounts tb_task_approver_organizer_accounts?
+model MasterLocation {
+  id         Int      @id @default(autoincrement())
+  province   String   @db.VarChar(255)
+  district   String   @db.VarChar(255)
+  zipcode    String   @db.VarChar(50)
+  address    String   @db.VarChar(255)
+  created_at DateTime @default(now()) @db.Timestamp(3)
+  created_by Int?
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamp(3)
+  updated_by Int?
+  Event      Event[]
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-model tb_register_running_events {
-  id                          Int                          @id @default(autoincrement())
-  reg_event_id                String                       @db.VarChar(100)
-  reg_event_name              String                       @db.VarChar(255)
-  reg_event_due_date          DateTime                     @db.Date
-  reg_event_price             Float
-  reg_event_amount            Int
-  reg_event_detail            String                       @db.VarChar(255)
-  reg_event_distance          String                       @db.VarChar(255)
-  reg_event_status            String                       @db.VarChar(100)
-  reg_event_path_img          String                       @db.VarChar(255)
-  location_id                 Int                         
-  trans_id                    Int                          @unique
-  created_at                  DateTime                     @default(now()) @db.Timestamp(3)
-  created_by                  Int?
-  updated_at                  DateTime                     @default(now()) @db.Timestamp(3)
-  updated_by                  Int?
-  tb_master_locations         tb_master_locations          @relation(fields: [location_id], references: [id])
-  tb_transactions             tb_transactions              @relation(fields: [trans_id], references: [id])
-  tb_register_running_members tb_register_running_members[]
-  tb_task_approver_reg_events tb_task_approver_reg_events?
+model Event {
+  id              Int               @id @default(autoincrement())
+  name            String            @db.VarChar(255)
+  due_date        DateTime          @db.Date
+  price           Float
+  max_amount      Int
+  detail          String            @db.VarChar(255)
+  distance        String            @db.VarChar(255)
+  status_code     String            @db.VarChar(2)
+  path_image      String            @db.VarChar(255)
+  location_id     Int
+  trans_id        Int               @unique
+  is_active       Boolean?
+  created_at      DateTime          @default(now()) @db.Timestamp(3)
+  created_by      Int?
+  updated_at      DateTime          @default(now()) @updatedAt @db.Timestamp(3)
+  updated_by      Int?
+  MasterLocation  MasterLocation    @relation(fields: [location_id], references: [id])
+  Transaction     Transaction       @relation(fields: [trans_id], references: [id])
+  EventJoin       EventJoin[]
+  ApprovedEvent   ApprovedEvent[]
+  Invoice         Invoice[]
+  Payment         Payment[]
+  RecordDataEvent RecordDataEvent[]
 
   @@index([location_id])
   @@index([trans_id])
 }
 
-model tb_register_running_members {
-  id                           Int                           @id @default(autoincrement())
-  reg_member_id                String                        @db.VarChar(100)
-  reg_member_status            String                        @db.VarChar(45)
-  reg_member_description       String?                       @db.VarChar(255)
-  name                         String                        @db.VarChar(100)
-  lastname                     String                        @db.VarChar(100)
-  tel                          String                        @db.VarChar(45)
-  email                        String                        @db.VarChar(100)
-  reg_event_id                 Int                           
-  trans_id                     Int                           @unique
-  created_at                   DateTime                      @default(now()) @db.Timestamp(3)
-  created_by                   Int?
-  updated_at                   DateTime                      @default(now()) @db.Timestamp(3)
-  updated_by                   Int?
-  tb_register_running_events   tb_register_running_events    @relation(fields: [reg_event_id], references: [id])
-  tb_transactions              tb_transactions               @relation(fields: [trans_id], references: [id])
-  tb_task_approver_reg_members tb_task_approver_reg_members?
+model UsersOnEventJoin {
+  EventJoin     EventJoin @relation(fields: [event_join_id], references: [id])
+  status_code   String?   @db.VarChar(2)
+  event_join_id Int
+  User          User      @relation(fields: [user_id], references: [id])
+  user_id       Int
+  created_at    DateTime  @default(now()) @db.Timestamp(3)
+  created_by    Int?
+  updated_at    DateTime  @default(now()) @updatedAt @db.Timestamp(3)
+  updated_by    Int?
 
-  @@index([reg_event_id])
+  @@id([event_join_id, user_id])
+}
+
+model EventJoin {
+  id                Int                 @id @default(autoincrement())
+  description       String?             @db.VarChar(255)
+  event_id          Int?
+  trans_id          Int                 @unique
+  created_at        DateTime            @default(now()) @db.Timestamp(3)
+  created_by        Int?
+  updated_at        DateTime            @default(now()) @updatedAt @db.Timestamp(3)
+  updated_by        Int?
+  Event             Event?              @relation(fields: [event_id], references: [id])
+  Transaction       Transaction         @relation(fields: [trans_id], references: [id])
+  ApprovedJoinEvent ApprovedJoinEvent[]
+  UsersOnEventJoin  UsersOnEventJoin[]
+  RecordDataEvent   RecordDataEvent[]
+
+  @@index([event_id])
   @@index([trans_id])
 }
 
-model tb_task_approver_organizer_accounts {
-  id                         Int           @id @default(autoincrement())
-  task_apv_organ_id          String        @db.VarChar(100)
-  task_apv_organ_status      String        @db.VarChar(255)
-  task_apv_organ_reason      String?       @db.VarChar(255)
-  task_apv_organ_approver_by String        @db.VarChar(100)
-  organ_id                   Int           @unique
-  created_at                 DateTime      @default(now()) @db.Timestamp(3)
-  created_by                 Int?
-  updated_at                 DateTime      @default(now()) @db.Timestamp(3)
-  updated_by                 Int?
-  tb_organizers              tb_organizers @relation(fields: [organ_id], references: [id])
+model ApprovedAccount {
+  id          Int      @id @default(autoincrement())
+  status_code String?  @db.VarChar(2)
+  reason      String?  @db.VarChar(255)
+  approved_by Int?
+  created_at  DateTime @default(now()) @db.Timestamp(3)
+  created_by  Int?
+  updated_at  DateTime @default(now()) @updatedAt @db.Timestamp(3)
+  updated_by  Int?
+  User        User?    @relation(fields: [user_id], references: [id])
+  user_id     Int?
 
-  @@index([organ_id])
+  @@index([user_id])
 }
 
-model tb_task_approver_reg_events {
-  id                         Int                        @id @default(autoincrement())
-  task_apv_reg_id            String                     @db.VarChar(100)
-  task_apv_reg_status        String                     @db.VarChar(255)
-  task_apv_reg_approver_by   String                     @db.VarChar(100)
-  task_apv_reg_reason        String?                    @db.VarChar(255)
-  reg_event_id               Int                        @unique
-  created_at                 DateTime                   @default(now()) @db.Timestamp(3)
-  created_by                 Int?
-  updated_at                 DateTime                   @default(now()) @db.Timestamp(3)
-  updated_by                 Int?
-  tb_register_running_events tb_register_running_events @relation(fields: [reg_event_id], references: [id])
+model ApprovedEvent {
+  id          Int      @id @default(autoincrement())
+  status_code String?  @db.VarChar(2)
+  reason      String?  @db.VarChar(255)
+  event_id    Int?
+  approved_by Int?
+  created_at  DateTime @default(now()) @db.Timestamp(3)
+  created_by  Int?
+  updated_at  DateTime @default(now()) @updatedAt @db.Timestamp(3)
+  updated_by  Int?
+  Event       Event?   @relation(fields: [event_id], references: [id])
 
-  @@index([reg_event_id])
+  @@index([event_id])
 }
 
-model tb_task_approver_reg_members {
-  id                              Int                         @id @default(autoincrement())
-  task_apv_reg_member_id          String                      @db.VarChar(100)
-  task_apv_reg_member_status      String                      @db.VarChar(45)
-  task_apv_reg_member_approver_by String                      @db.VarChar(100)
-  task_apv_reg_member_reason      String?                     @db.VarChar(255)
-  reg_member_id                   Int                         @unique
-  created_at                      DateTime                    @default(now()) @db.Timestamp(3)
-  created_by                      Int?
-  updated_at                      DateTime                    @default(now()) @db.Timestamp(3)
-  updated_by                      Int?
-  tb_register_running_members     tb_register_running_members @relation(fields: [reg_member_id], references: [id])
+model ApprovedJoinEvent {
+  id            Int        @id @default(autoincrement())
+  status_code   String?    @db.VarChar(2)
+  approved_by   Int?
+  reason        String?    @db.VarChar(255)
+  event_join_id Int?
+  user_id       Int?
+  created_at    DateTime   @default(now()) @db.Timestamp(3)
+  created_by    Int?
+  updated_at    DateTime   @default(now()) @updatedAt @db.Timestamp(3)
+  updated_by    Int?
+  EventJoin     EventJoin? @relation(fields: [event_join_id], references: [id])
+  User          User?      @relation(fields: [user_id], references: [id])
 
-  @@index([reg_member_id])
+  @@index([event_join_id])
 }
 
-model tb_transactions {
-  id                          Int                          @id @default(autoincrement())
-  trans_id                    String                       @db.VarChar(100)
-  trans_todo                  String                       @db.VarChar(255)
-  trans_status                String                       @db.VarChar(100)
-  auth_id                     Int                         
-  created_at                  DateTime                     @default(now()) @db.Timestamp(3)
-  created_by                  Int?
-  updated_at                  DateTime                     @default(now()) @db.Timestamp(3)
-  updated_by                  Int?
-  tb_register_running_events  tb_register_running_events?
-  tb_register_running_members tb_register_running_members?
-  tb_authentications          tb_authentications           @relation(fields: [auth_id], references: [id])
+model Transaction {
+  id         Int        @id @default(autoincrement())
+  status     String     @db.VarChar(100)
+  type       String     @db.VarChar(50)
+  user_id    Int
+  created_at DateTime   @default(now()) @db.Timestamp(3)
+  created_by Int?
+  updated_at DateTime   @default(now()) @updatedAt @db.Timestamp(3)
+  updated_by Int?
+  Event      Event?
+  EventJoin  EventJoin?
+  user       User       @relation(fields: [user_id], references: [id])
 
-  @@index([auth_id])
+  @@index([user_id])
+}
+
+model Invoice {
+  id           Int      @id @default(autoincrement())
+  invoice_code String   @db.VarChar(100)
+  user_id      Int?
+  event_id     Int?
+  count_print  Int?
+  is_active    Boolean
+  Event        Event?   @relation(fields: [event_id], references: [id])
+  User         User?    @relation(fields: [user_id], references: [id])
+  created_at   DateTime @default(now()) @db.Timestamp(3)
+  created_by   Int?
+  updated_at   DateTime @default(now()) @updatedAt @db.Timestamp(3)
+  updated_by   Int?
+  Payment      Payment?
+}
+
+model Notification {
+  id                   Int      @id @default(autoincrement())
+  is_view_notification Boolean
+  content              String   @db.VarChar(255)
+  user_id              Int?
+  User                 User?    @relation(fields: [user_id], references: [id])
+  created_at           DateTime @default(now()) @db.Timestamp(3)
+  created_by           Int?
+  updated_at           DateTime @default(now()) @updatedAt @db.Timestamp(3)
+  updated_by           Int?
+}
+
+model Payment {
+  id                  Int     @id @default(autoincrement())
+  status_code         String  @db.VarChar(2)
+  account_bank_number String  @db.VarChar(15)
+  account_bank_name   String  @db.VarChar(100)
+  total_price         Decimal
+  payment_code        String  @db.VarChar(100)
+  type_payment        String  @db.VarChar(100)
+  invoice_id          Int     @unique
+  event_id            Int?
+  Event               Event?  @relation(fields: [event_id], references: [id])
+  Invoice             Invoice @relation(fields: [invoice_id], references: [id])
+}
+
+model RecordDataEvent {
+  id            Int        @id @default(autoincrement())
+  is_end        Boolean
+  finish_time   DateTime?
+  sequence      Int?
+  event_id      Int?
+  event_join_id Int?
+  Event         Event?     @relation(fields: [event_id], references: [id])
+  EventJoin     EventJoin? @relation(fields: [event_join_id], references: [id])
 }
