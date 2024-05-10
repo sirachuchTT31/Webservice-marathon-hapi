@@ -9,7 +9,7 @@ const baseModel = require('../../utils/response-model.js');
 const prismaClient = new PrismaClient();
 const httpResponse = require('../../constant/http-response.js');
 const authenValidate = require('../validate/authen.validate');
-
+const cryptLib = require('../../utils/crypt-lib.js')
 
 const signIn = {
     auth: false,
@@ -34,13 +34,13 @@ const signIn = {
                 }
                 const password = findAuthen.password
                 const passwordCompare = await bcrypt.compare(value.password, password)
-                if (passwordCompare === true && findAuthen.access_status === 'Y') {
+                if (passwordCompare === true && findAuthen.access_status === 'Y') { 
                     const payloadJWT = {
-                        id: findAuthen.id,
-                        username: findAuthen.username,
+                        id: await cryptLib.encryptAES(findAuthen.id),
+                        username: await cryptLib.encryptAES(findAuthen.username),
                         name: findAuthen.name,
                         lastname: findAuthen.lastname,
-                        role : findAuthen.role
+                        role: await cryptLib.encryptAES(findAuthen.role)
                     }
                     const token = await generateAccessToken(payloadJWT);
                     const refreshToken = await generateRefreshToken(payloadJWT);
@@ -213,14 +213,14 @@ const registerOrganizer = {
                 const findDuplicates = await prismaClient.user.findFirst({
                     where: {
                         username: value.username,
-                        role : 'organizer'
+                        role: 'organizer'
                     }
                 });
                 if (_.isEmpty(findDuplicates)) {
                     const salt = await bcrypt.genSalt(10);
                     const hash = await bcrypt.hash(value.password, salt);
                     const response = await prismaClient.user.create({
-                        data : {
+                        data: {
                             username: value.username,
                             password: hash,
                             name: value.name,

@@ -2,7 +2,7 @@ const CryptoJS = require("crypto-js");
 
 const encryptAES = async (text) => {
     try {
-        const ciphertext = CryptoJS.AES.encrypt(text, process.env.SECRET_KEY).toString();
+        const ciphertext = CryptoJS.AES.encrypt(String(text), process.env.SECRET_KEY).toString();
         return ciphertext ? ciphertext  :""
     }
     catch (e) {
@@ -12,7 +12,7 @@ const encryptAES = async (text) => {
 
 const decryptAES = async (cipher) => {
     try {
-        const bytes = CryptoJS.AES.decrypt(cipher, process.env.SECRET_KEY);
+        const bytes = CryptoJS.AES.decrypt(String(cipher), process.env.SECRET_KEY);
         const originalData = bytes.toString(CryptoJS.enc.Utf8);
         return originalData ? originalData : ""
     }
