@@ -88,8 +88,7 @@ const refreshToken = {
     auth: false,
     handler: async (request, reply) => {
         try {
-
-            const refreshToken = request.headers.authorization.replace("Bearer ", "");
+            const refreshToken = request.payload.refreshToken
             const responseRefreshToken = await jwtVerifyRefreshToken(refreshToken);
             if (responseRefreshToken.isValid != false) {
                 const findAuthen = await prismaClient.user.findFirst({
@@ -99,10 +98,11 @@ const refreshToken = {
                 });
                 if (!_.isEmpty(findAuthen)) {
                     const payloadJWT = {
-                        id: findAuthen.id,
-                        username: findAuthen.username,
+                        id: await cryptLib.encryptAES(findAuthen.id),
+                        username: await cryptLib.encryptAES(findAuthen.username),
                         name: findAuthen.name,
-                        lastname: findAuthen.lastname
+                        lastname: findAuthen.lastname,
+                        role: await cryptLib.encryptAES(findAuthen.role)
                     }
                     const accessToken = await generateAccessToken(payloadJWT, process.env.REFRESH_TOKEN_EXPIRATION);
                     const tokenDecode = await jwtDecode(accessToken);
