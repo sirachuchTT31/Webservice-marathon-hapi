@@ -1,7 +1,7 @@
 const response = require('http-status-codes')
 const STATUS_200 = {
     status_code: response.StatusCodes.OK,
-    message : response.ReasonPhrases.OK
+    message: response.ReasonPhrases.OK
 }
 
 const STATUS_500 = {
@@ -20,13 +20,18 @@ const STATUS_401 = {
 }
 
 const STATUS_UNAUTHORIZED = {
-    status_code : response.StatusCodes.UNAUTHORIZED,
-    message : response.ReasonPhrases.UNAUTHORIZED
+    status_code: response.StatusCodes.UNAUTHORIZED,
+    message: response.ReasonPhrases.UNAUTHORIZED
 }
 
 const STATUS_CREATED = {
-    status_code : response.StatusCodes.CREATED,
-    message : response.ReasonPhrases.CREATED
+    status_code: response.StatusCodes.CREATED,
+    message: response.ReasonPhrases.CREATED
+}
+
+const UNAUTHORIZED = {
+    status_code: response.StatusCodes.UNAUTHORIZED,
+    message: response.ReasonPhrases.UNAUTHORIZED
 }
 
 
@@ -36,5 +41,6 @@ module.exports = {
     STATUS_400,
     STATUS_401,
     STATUS_UNAUTHORIZED,
-    STATUS_CREATED
+    STATUS_CREATED,
+    UNAUTHORIZED
 }

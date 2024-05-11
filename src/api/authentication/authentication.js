@@ -10,7 +10,7 @@ const prismaClient = new PrismaClient();
 const httpResponse = require('../../constant/http-response.js');
 const authenValidate = require('../validate/authen.validate');
 const cryptLib = require('../../utils/crypt-lib.js')
-
+const Constrat = require('../../constant/authentication-response.js')
 const signIn = {
     auth: false,
     handler: async (request, reply) => {
@@ -34,7 +34,7 @@ const signIn = {
                 }
                 const password = findAuthen.password
                 const passwordCompare = await bcrypt.compare(value.password, password)
-                if (passwordCompare === true && findAuthen.access_status === 'Y') { 
+                if (passwordCompare === true && findAuthen.access_status === 'Y') {
                     const payloadJWT = {
                         id: await cryptLib.encryptAES(findAuthen.id),
                         username: await cryptLib.encryptAES(findAuthen.username),
@@ -118,9 +118,9 @@ const refreshToken = {
                     }
                     return reply.response(await baseResult.IBaseSingleResult(baseModel.IBaseSingleResultModel))
                 }
-                return Boom.unauthorized()
+                return Constrat.unauthorized()
             }
-            return Boom.unauthorized()
+            return Constrat.unauthorized()
         }
         catch (e) {
             console.error(e)
