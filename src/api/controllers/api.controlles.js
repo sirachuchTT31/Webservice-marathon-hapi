@@ -239,11 +239,11 @@ const createMasterLocation = {
             if (!error) {
                 const response = await prismaClient.masterLocation.create({
                     data: {
-                        province : value.province,
-                        address : value.address,
-                        district : value.district,
-                        zipcode : value.zipcode,
-                        created_by : jwtDecode.id
+                        province: value.province,
+                        address: value.address,
+                        district: value.district,
+                        zipcode: value.zipcode,
+                        created_by: jwtDecode.id
                     }
                 });
                 if (!_.isEmpty(response)) {
@@ -282,10 +282,10 @@ const createMasterLocation = {
     }
 }
 // TODO: Dont test
-const getAllLocation = {
+const getAllMasterLocation = {
     handler: async (request, reply) => {
         try {
-            const findAll = prismaClient.masterLocation.findMany({
+            const findAll = await prismaClient.masterLocation.findMany({
                 orderBy: {
                     province: 'asc'
                 }
@@ -324,46 +324,52 @@ const createEvent = {
             const { value, error } = validateEvent.createEventValidate.validate(payload);
             if (!error) {
                 const jwtPayload = await JWT.jwtDecode(token)
+                const createdId = await cryptLib.decryptAES(jwtPayload.id)
+                const userId = await cryptLib.decryptAES(value.auth_id)
                 const t = await prismaClient.$transaction([
                     prismaClient.transaction.create({
                         data: {
-                            status : '01',
-                            user_id: value.user_id,
-                            created_by: jwtPayload.id,
+                            status: '01',
+                            user_id: Number(userId),
+                            created_by: Number(createdId),
+                            type: 'Event',
                             Event: {
                                 create: {
-                                    name : value.name,
-                                    price : Number(parseFloat(value.price).toFixed(2)),
-                                    max_amount : Number(value.max_amount),
-                                    detail : value.detail,
-                                    distance : value.distance,
-                                    due_date : new Date(value.due_date),
-                                    path_image : '',
-                                    status_code : '01',
+                                    name: value.name,
+                                    price: Number(parseFloat(value.price).toFixed(2)),
+                                    max_amount: Number(value.max_amount),
+                                    detail: value.detail,
+                                    distance: value.distance,
+                                    due_date: new Date(value.due_date),
+                                    path_image: '',
+                                    status_code: '01',
                                     location_id: Number(value.location_id),
-                                    created_by: jwtPayload.id
+                                    created_by: Number(createdId)
                                 }
                             }
                         }
                     })
                 ]);
+                console.log('t',t)
                 if (!_.isEmpty(t)) {
-                    baseModel.IBaseNocontentModel = {
+                    baseModel.IBaseSingleResultModel = {
                         status: true,
                         status_code: httpResponse.STATUS_CREATED.status_code,
                         message: httpResponse.STATUS_CREATED.message,
                         error_message: '',
+                        result: t[0].id
                     }
-                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                    return reply.response(await baseResult.IBaseSingleResult(baseModel.IBaseSingleResultModel))
                 }
                 else {
-                    baseModel.IBaseNocontentModel = {
+                    baseModel.IBaseSingleResultModel = {
                         status: false,
                         status_code: httpResponse.STATUS_500.status_code,
                         message: httpResponse.STATUS_500.message,
                         error_message: '',
+                        result: ''
                     }
-                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                    return reply.response(await baseResult.IBaseSingleResult(baseModel.IBaseSingleResultModel))
                 }
             }
             else {
@@ -384,17 +390,54 @@ const createEvent = {
 }
 
 const uploadImageEvent = {
+    payload: {
+        output: 'stream',
+        parse: true,
+        multipart: true
+    },
     handler: async (request, reply) => {
         try {
             const payload = request.payload;
-            const id = payload.id
-            // const pathImage = await Handler.HandleruploadImageEvent(payload)
-            return {
-                status: true
+            console.log(payload.id)
+            const id = await cryptLib.decryptAES(payload.id)
+            const t = await prismaClient.$transaction(async (tx) => {
+                const pathImage = await Handler.HandleruploadImageEvent(payload)
+                if (!pathImage) {
+                    return null
+                }
+                const updateEvent = await tx.event.update({
+                    where: {
+                        trans_id: Number(id)
+                    },
+                    data: {
+                        path_image: pathImage
+                    }
+                });
+                return updateEvent ? updateEvent : ''
+            });
+            console.log(t)
+            if (!_.isEmpty(t)) {
+                baseModel.IBaseNocontentModel = {
+                    status: true,
+                    status_code: httpResponse.STATUS_200.status_code,
+                    error_message: '',
+                    message: 'Updated successfully'
+                }
+                return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+            }
+            else {
+                baseModel.IBaseNocontentModel = {
+                    status: true,
+                    status_code: httpResponse.STATUS_500.status_code,
+                    error_message: '',
+                    message: httpResponse.STATUS_500.message
+                }
+                return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
             }
         }
         catch (e) {
-
+            console.log(e)
+            Boom.badImplementation();
         }
     },
 }
@@ -404,47 +447,42 @@ const getAllEvent = {
         try {
             const t = await prismaClient.$transaction(async (tx) => {
                 let currentDate = new Date()
-                const findAll = await tx.tb_register_running_events.findMany({
+                const findAll = await tx.event.findMany({
                     where: {
                         AND: [
                             {
-                                reg_event_status: {
-                                    equals: '02'
-                                },
+                                status_code: '02'
                             },
                             {
-                                reg_event_due_date: {
+                                due_date: {
                                     gte: currentDate
                                 }
                             }
-
                         ]
-                    },
-                    include: {
-                        tb_master_locations: {
+                    }, include: {
+                        MasterLocation: {
                             select: {
                                 id: true,
-                                location_id: true,
-                                location_province: true,
-                                location_address: true,
-                                location_zipcode: true,
-                                location_district: true
+                                province: true,
+                                address: true,
+                                zipcode: true,
+                                district: true
                             }
                         }
                     }
                 });
 
                 //Auto update due date status 01 Cancel 
-                const findWhereDuedate = await tx.tb_register_running_events.findMany({
+                const findWhereDuedate = await tx.event.findMany({
                     where: {
                         AND: [
                             {
-                                reg_event_due_date: {
+                                due_date: {
                                     lt: currentDate
                                 },
                             },
                             {
-                                reg_event_status: {
+                                status_code: {
                                     equals: '01'
                                 }
                             }
@@ -453,20 +491,20 @@ const getAllEvent = {
                 })
                 if (!_.isEmpty(findWhereDuedate)) {
                     for (const item of findWhereDuedate) {
-                        await tx.tb_register_running_events.update({
+                        await tx.event.update({
                             where: {
                                 id: item.id
                             },
                             data: {
-                                reg_event_status: '04',
-                                tb_transactions: {
+                                status_code: '04',
+                                Transaction: {
                                     update: {
-                                        trans_status: '04'
+                                        status: '04'
                                     }
                                 }
                             },
                             include: {
-                                tb_transactions: true
+                                Transaction: true
                             }
                         });
                     }
@@ -528,7 +566,7 @@ module.exports = {
 
     //MasterData 
     createMasterLocation,
-    getAllLocation,
+    getAllMasterLocation,
 
     //Event 
     createEvent,

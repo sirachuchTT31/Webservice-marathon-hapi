@@ -13,7 +13,7 @@ module.exports = {
                 cors: {
                     origin: ['*'],
                     credentials: true,
-                    additionalHeaders: ['Access-Control-Allow-Origin', 'Access-Control-Request-Method', 'Access-Control-Allow-Methods', 'language', 'network' ,'Access-Control-Allow-Headers'],
+                    additionalHeaders: ['Access-Control-Allow-Origin', 'Access-Control-Request-Method', 'Access-Control-Allow-Methods', 'language', 'network' ,'Access-Control-Allow-Headers' ,'Authorization'],
                     headers: ['Accept', 'Content-Type'],
                 }
             }

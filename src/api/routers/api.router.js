@@ -30,7 +30,7 @@ const routers = [
     {
         method: 'GET',
         path: '/api/get-all-master-location',
-        config: Controller.getAllLocation
+        config: Controller.getAllMasterLocation
     },
     //FIXME: Event
     {
@@ -41,14 +41,15 @@ const routers = [
     {
         method: 'POST',
         path: '/api/upload-image-event',
-        options: {
-            payload: {
-                output: 'stream',
-                parse: true,
-                multipart: true
-            }
-        },
-        ...Controller.uploadImageEvent
+        config : Controller.uploadImageEvent
+        // options: {
+        //     payload: {
+        //         output: 'stream',
+        //         parse: true,
+        //         multipart: true
+        //     }
+        // },
+        // ...Controller.uploadImageEvent
     },
     {
         method: 'GET',

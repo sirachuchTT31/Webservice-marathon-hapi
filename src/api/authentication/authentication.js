@@ -27,7 +27,7 @@ const signIn = {
                     baseModel.IBaseSingleResultModel = {
                         status: false,
                         status_code: httpResponse.STATUS_200.status_code,
-                        message: 'Sign in failed',
+                        message: 'ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้อง',
                         result: null
                     }
                     return reply.response(await baseResult.IBaseSingleResult(baseModel.IBaseSingleResultModel))
