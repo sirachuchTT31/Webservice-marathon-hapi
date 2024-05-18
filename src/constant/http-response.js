@@ -34,9 +34,15 @@ const UNAUTHORIZED = {
     message: response.ReasonPhrases.UNAUTHORIZED
 }
 
+const STATUS_201_NOCONENT = {
+    status_code : response.StatusCodes.NO_CONTENT,
+    message : response.ReasonPhrases.NO_CONTENT
+}
+
 
 module.exports = {
     STATUS_200,
+    STATUS_201_NOCONENT,
     STATUS_500,
     STATUS_400,
     STATUS_401,

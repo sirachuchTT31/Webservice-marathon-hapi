@@ -11,6 +11,7 @@ const httpResponse = require('../../constant/http-response.js');
 const authenValidate = require('../validate/authen.validate');
 const cryptLib = require('../../utils/crypt-lib.js')
 const Constrat = require('../../constant/authentication-response.js')
+const Response = require('../../constant/response.js')
 const signIn = {
     auth: false,
     handler: async (request, reply) => {
@@ -68,18 +69,12 @@ const signIn = {
                 }
             }
             else {
-                baseModel.IBaseNocontentModel = {
-                    status: false,
-                    status_code: httpResponse.STATUS_400.status_code,
-                    message: httpResponse.STATUS_400.message,
-                    error_message: httpResponse.STATUS_400.message,
-                }
-                return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
             }
         }
         catch (e) {
             console.error(e)
-            Boom.badImplementation()
+            return reply.response(Response.InternalServerError(e.message))
         }
     }
 }
@@ -124,7 +119,7 @@ const refreshToken = {
         }
         catch (e) {
             console.error(e)
-            Boom.badImplementation()
+            return reply.response(Response.InternalServerError(e.message))
         }
     }
 }
@@ -187,18 +182,12 @@ const registerMembers = {
 
             }
             else {
-                baseModel.IBaseNocontentModel = {
-                    status: false,
-                    status_code: httpResponse.STATUS_400.status_code,
-                    message: httpResponse.STATUS_400.message,
-                    error_message: httpResponse.STATUS_400.message,
-                }
-                return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
             }
         }
         catch (e) {
             console.error(e)
-            Boom.badImplementation()
+            return reply.response(Response.InternalServerError(e.message))
         }
     }
 }
@@ -259,18 +248,12 @@ const registerOrganizer = {
                 }
             }
             else {
-                baseModel.IBaseNocontentModel = {
-                    status: false,
-                    status_code: httpResponse.STATUS_400.status_code,
-                    message: httpResponse.STATUS_400.message,
-                    error_message: httpResponse.STATUS_400.message,
-                }
-                return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
             }
         }
         catch (e) {
             console.error(e)
-            Boom.badImplementation()
+            return reply.response(Response.InternalServerError(e.message))
         }
     }
 }

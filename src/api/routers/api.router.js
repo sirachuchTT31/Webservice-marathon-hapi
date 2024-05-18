@@ -60,6 +60,11 @@ const routers = [
         method : 'POST',
         path : '/api/test-encrypt',
         config : Controller.cryptTest
+    },
+    {
+        method : 'GET',
+        path : '/api/get-event-backoffice',
+        config : Controller.getEventBackoffice
     }
 ]
 

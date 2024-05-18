@@ -12,6 +12,7 @@ const validateEvent = require('../validate/event.validate.js')
 const JWT = require('../../utils/authentication.js')
 const Handler = require('../handler/api.handler.js');
 const cryptLib = require('../../utils/crypt-lib.js')
+const Response = require('../../constant/response.js')
 
 //FIXME: Admin
 const createAdmin = {
@@ -72,18 +73,12 @@ const createAdmin = {
                 }
             }
             else {
-                baseModel.IBaseNocontentModel = {
-                    status: false,
-                    status_code: httpResponse.STATUS_400.status_code,
-                    message: httpResponse.STATUS_400.message,
-                    error_message: httpResponse.STATUS_400.message,
-                }
-                return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
             }
         }
         catch (e) {
             console.log(e)
-            Boom.badImplementation()
+            return reply.response(Response.InternalServerError(e.message))
         }
     }
 }
@@ -119,7 +114,7 @@ const getAllAdmin = {
             }
         }
         catch (e) {
-            Boom.badImplementation()
+            return reply.response(Response.InternalServerError(e.message))
         }
     }
 }
@@ -164,18 +159,12 @@ const updateAdmin = {
                 }
             }
             else {
-                baseModel.IBaseNocontentModel = {
-                    status: false,
-                    status_code: httpResponse.STATUS_400.status_code,
-                    message: httpResponse.STATUS_400.message,
-                    error_message: httpResponse.STATUS_400.message,
-                }
-                return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
             }
         }
         catch (e) {
             console.error(e);
-            Boom.badImplementation()
+            return reply.response(Response.InternalServerError(e.message))
         }
     }
 }
@@ -211,18 +200,12 @@ const deleteAdmin = {
                 }
             }
             else {
-                baseModel.IBaseNocontentModel = {
-                    status: false,
-                    status_code: httpResponse.STATUS_400.status_code,
-                    message: httpResponse.STATUS_400.message,
-                    error_message: httpResponse.STATUS_400.message,
-                }
-                return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
             }
         }
         catch (e) {
             console.log(e);
-            Boom.badImplementation();
+            return reply.response(Response.InternalServerError(e.message))
         }
     }
 }
@@ -258,26 +241,20 @@ const createMasterLocation = {
                 else {
                     baseModel.IBaseNocontentModel = {
                         status: false,
-                        status_code: httpResponse.STATUS_400.status_code,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
                         message: 'Create failed',
-                        error_message: httpResponse.STATUS_400.message,
+                        error_message: httpResponse.STATUS_CREATED.message,
                     }
                     return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
                 }
             }
             else {
-                baseModel.IBaseNocontentModel = {
-                    status: false,
-                    status_code: httpResponse.STATUS_400.status_code,
-                    message: httpResponse.STATUS_400.message,
-                    error_message: httpResponse.STATUS_400.message,
-                }
-                return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
             }
         }
         catch (e) {
             console.log(e);
-            Boom.badImplementation();
+            return reply.response(Response.InternalServerError(e.message))
         }
     }
 }
@@ -302,8 +279,8 @@ const getAllMasterLocation = {
             else {
                 baseModel.IBaseCollectionResultsModel = {
                     status: false,
-                    status_code: httpResponse.STATUS_500.message,
-                    message: httpResponse.STATUS_500.message,
+                    status_code: httpResponse.STATUS_201_NOCONENT.status_code,
+                    message: httpResponse.STATUS_201_NOCONENT.message,
                     results: []
                 }
                 return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
@@ -311,7 +288,7 @@ const getAllMasterLocation = {
         }
         catch (e) {
             console.log(e);
-            Boom.badImplementation();
+            return reply.response(Response.InternalServerError(e.message))
         }
     }
 }
@@ -364,7 +341,7 @@ const createEvent = {
                 else {
                     baseModel.IBaseSingleResultModel = {
                         status: false,
-                        status_code: httpResponse.STATUS_500.status_code,
+                        status_code:httpResponse.STATUS_CREATED.status_code,
                         message: httpResponse.STATUS_500.message,
                         error_message: '',
                         result: ''
@@ -373,18 +350,12 @@ const createEvent = {
                 }
             }
             else {
-                baseModel.IBaseNocontentModel = {
-                    status: false,
-                    status_code: httpResponse.STATUS_400.status_code,
-                    message: httpResponse.STATUS_400.message,
-                    error_message: httpResponse.STATUS_400.message,
-                }
-                return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
             }
         }
         catch (e) {
             console.log(e);
-            Boom.badImplementation();
+            return reply.response(Response.InternalServerError(e.message))
         }
     }
 }
@@ -437,7 +408,7 @@ const uploadImageEvent = {
         }
         catch (e) {
             console.log(e)
-            Boom.badImplementation();
+            return reply.response(Response.InternalServerError(e.message))
         }
     },
 }
@@ -533,7 +504,67 @@ const getAllEvent = {
         }
         catch (e) {
             console.log(e);
-            Boom.badImplementation();
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
+
+// *********************************************** Back-ofiice **********************************************
+const getEventBackoffice = {
+    handler : async (request , reply) => {
+        try{
+            const getEvent = await prismaClient.event.findMany(
+                {
+                    where : {
+                        status_code : '01'
+                    } ,
+                    include : {
+                        MasterLocation: {
+                            select: {
+                                id: true,
+                                province: true,
+                                address: true,
+                                zipcode: true,
+                                district: true
+                            }
+                        }
+                    }
+                }
+            );
+            if(!_.isEmpty(getEvent)){
+                baseModel.IBaseCollectionResultsModel = {
+                    status : true ,
+                    status_code : httpResponse.STATUS_200.status_code ,
+                    message : httpResponse.STATUS_200.message,
+                    results : getEvent
+                }
+                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
+            }
+            else {
+                baseModel.IBaseCollectionResultsModel = {
+                    status : false ,
+                    status_code : httpResponse.STATUS_200.status_code ,
+                    message : httpResponse.STATUS_200.message,
+                    results : []
+                }
+                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
+            }
+        }
+        catch(e){
+            console.log(e);
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
+
+const updateEventBackoffice = {
+    handler : async (request , reply) => {
+        try{
+            
+        }
+        catch(e){
+            console.log(e);
+            return reply.response(Response.InternalServerError(e.message))
         }
     }
 }
@@ -552,6 +583,7 @@ const cryptTest = {
         }
         catch (e) {
             console.log(e)
+            return reply.response(Response.InternalServerError(e.message))
         }
     }
 }
@@ -574,5 +606,8 @@ module.exports = {
     uploadImageEvent,
 
     //Test
-    cryptTest
+    cryptTest,
+
+    //Back-office 
+    getEventBackoffice
 }
