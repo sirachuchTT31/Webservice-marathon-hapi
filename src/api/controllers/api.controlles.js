@@ -16,6 +16,11 @@ const Response = require('../../constant/response.js')
 
 //FIXME: Admin
 const createAdmin = {
+    tags : ['api'],
+    description : 'Create Admin',
+    // validate : {
+    //     params : validateAdmin.createAdminValidate.keys()
+    // },
     handler: async (request, reply) => {
         try {
             const payload = request.payload
@@ -627,6 +632,14 @@ const cryptTest = {
     }
 }
 
+//******************************************************* empty ************************** */
+const emptyPath = {
+    auth : false,
+    handler : async (request , h) => {
+        return "<h1>Welcome to API Vesion 1.0.0</h1>"
+    }
+}
+
 
 module.exports = {
     //Admin
@@ -649,5 +662,9 @@ module.exports = {
 
     //Back-office 
     getEventBackoffice,
-    updateEventBackoffice
+    updateEventBackoffice,
+
+
+    //*************** emtyp ************** */
+    emptyPath
 }

@@ -1,8 +1,10 @@
 const Bearertoken = require('hapi-auth-bearer-token')
 const Jwt2 = require('hapi-auth-jwt2');
-const inert = require('@hapi/inert')
+const Inert  = require('@hapi/inert')
 const Basic = require('@hapi/basic');
 const routerPlugin = require('../plugin/routers.js');
+const Vision = require('@hapi/vision')
+const { swagger } = require('../plugin/swagger.js')
 const { connectionDatabase } = require('../plugin/prisma.js')
 module.exports = {
     server: {
@@ -13,7 +15,7 @@ module.exports = {
                 cors: {
                     origin: ['*'],
                     credentials: true,
-                    additionalHeaders: ['Access-Control-Allow-Origin', 'Access-Control-Request-Method', 'Access-Control-Allow-Methods', 'language', 'network' ,'Access-Control-Allow-Headers' ,'Authorization'],
+                    additionalHeaders: ['Access-Control-Allow-Origin', 'Access-Control-Request-Method', 'Access-Control-Allow-Methods', 'language', 'network', 'Access-Control-Allow-Headers', 'Authorization'],
                     headers: ['Accept', 'Content-Type'],
                 }
             }
@@ -25,7 +27,10 @@ module.exports = {
         Bearertoken,
         Jwt2,
         // inert,
-        require('@hapi/inert'),
+        // require('@hapi/inert'),
+        Inert,
+        Vision,
         Basic,
+        swagger
     ]
 }

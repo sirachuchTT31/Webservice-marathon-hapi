@@ -70,6 +70,13 @@ const routers = [
         method : 'POST',
         path : '/api/update-event-backoffice',
         config : Controller.updateEventBackoffice
+    },
+
+    // ******************************************************* empty ************************************// 
+    {
+        method : 'GET',
+        path : '/',
+        config : Controller.emptyPath
     }
 ]
 

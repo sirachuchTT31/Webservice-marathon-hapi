@@ -12,6 +12,7 @@ const init = async () => {
         routes : Config.server.connection.routers
     })
     await server.register(config.register)
+    console.log(server.registrations)
     server.auth.strategy('jwt', 'bearer-access-token', {
         validate: async (request, token, h) => {
             const { isValid, result } = await jwtVerify(token, process.env.ACCESS_TOKEN_SECRET)
