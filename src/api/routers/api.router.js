@@ -65,6 +65,11 @@ const routers = [
         method : 'GET',
         path : '/api/get-event-backoffice',
         config : Controller.getEventBackoffice
+    },
+    {
+        method : 'POST',
+        path : '/api/update-event-backoffice',
+        config : Controller.updateEventBackoffice
     }
 ]
 

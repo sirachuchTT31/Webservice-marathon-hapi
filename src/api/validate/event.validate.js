@@ -12,7 +12,13 @@ const createEventValidate = Joi.object().keys({
     auth_id : Joi.string().required()
 })
 
+const updateEventValidate = Joi.object().keys({
+    transaction_id : Joi.string().required(),
+    status : Joi.string().required()
+})
+
 
 module.exports = {
-    createEventValidate
+    createEventValidate,
+    updateEventValidate
 }

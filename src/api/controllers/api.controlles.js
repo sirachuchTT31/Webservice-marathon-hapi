@@ -560,7 +560,46 @@ const getEventBackoffice = {
 const updateEventBackoffice = {
     handler : async (request , reply) => {
         try{
-            
+            const payload = request.payload
+            const token = request.headers.authorization
+            const { value, error } = validateEvent.updateEventValidate.validate(payload);
+            if(!error){
+                const updateEvent = await prismaClient.transaction.update(
+                    {
+                        data : {
+                            status : value.status,
+                            Event : {
+                                update : {
+                                    status_code : value.status
+                                }
+                            }
+                        },
+                        where : {
+                            trans_id : value.transaction_id
+                        },
+                        include : {
+                            Event : true
+                        }
+                    });
+                    if(!_.isEmpty(updateEvent)){
+                        baseModel.IBaseNocontentModel = {
+                            status : true,
+                            message : httpResponse.STATUS_201_NOCONENT.message,
+                            status_code : httpResponse.STATUS_200.status_code,
+                        }
+                        return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                    }
+                    
+                    baseModel.IBaseNocontentModel = {
+                        status : false ,
+                        status_code : httpResponse.STATUS_200.status_code,
+                        message : 'Updated failed'
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+            }
+            else {
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
+            }
         }
         catch(e){
             console.log(e);
@@ -609,5 +648,6 @@ module.exports = {
     cryptTest,
 
     //Back-office 
-    getEventBackoffice
+    getEventBackoffice,
+    updateEventBackoffice
 }
