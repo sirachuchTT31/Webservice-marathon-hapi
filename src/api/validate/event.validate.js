@@ -13,7 +13,7 @@ const createEventValidate = Joi.object().keys({
 })
 
 const updateEventValidate = Joi.object().keys({
-    transaction_id : Joi.string().required(),
+    transaction_id : Joi.number().required(),
     status : Joi.string().required()
 })
 

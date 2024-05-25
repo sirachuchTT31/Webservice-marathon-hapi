@@ -544,7 +544,7 @@ const updateEventBackoffice = {
                             }
                         },
                         where : {
-                            trans_id : value.transaction_id
+                            id : Number(value.transaction_id)
                         },
                         include : {
                             Event : true
