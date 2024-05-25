@@ -18,9 +18,9 @@ const Response = require('../../constant/response.js')
 const createAdmin = {
     tags : ['api'],
     description : 'Create Admin',
-    // validate : {
-    //     params : validateAdmin.createAdminValidate.keys()
-    // },
+    validate : {
+        payload : validateAdmin.createAdminValidate
+    },
     handler: async (request, reply) => {
         try {
             const payload = request.payload
@@ -89,6 +89,8 @@ const createAdmin = {
 }
 
 const getAllAdmin = {
+    tags : ['api'],
+    description : 'Get All Admin',
     handler: async (request, reply) => {
         try {
             const findAll = await prismaClient.user.findMany({

@@ -13,6 +13,11 @@ const cryptLib = require('../../utils/crypt-lib.js')
 const Constrat = require('../../constant/authentication-response.js')
 const Response = require('../../constant/response.js')
 const signIn = {
+    tags : ['api'],
+    description : 'Sign in',
+    validate : {
+        payload : authenValidate.signInValidate
+    },
     auth: false,
     handler: async (request, reply) => {
         try {
