@@ -27,6 +27,7 @@
     "joi": "^17.13.0",
     "jsonwebtoken": "^9.0.2",
     "jwt-decode": "^4.0.0",
+    "node-cron": "^3.0.3",
     "nodemon": "^3.1.0",
     "prisma": "^5.13.0",
     "underscore": "^1.13.6"
