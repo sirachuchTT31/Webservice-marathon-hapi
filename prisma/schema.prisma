@@ -8,22 +8,25 @@ datasource db {
 }
 
 model User {
-  id                     Int                 @id @default(autoincrement())
-  username               String              @db.VarChar(100)
-  password               String              @db.VarChar(100)
-  name                   String              @db.VarChar(100)
-  lastname               String              @db.VarChar(100)
-  email                  String              @db.VarChar(100)
-  avatar                 String              @db.LongText
-  access_status          String              @db.VarChar(2)
-  role                   String              @db.VarChar(50)
-  is_active_notification Boolean             @default(true)
-  created_at             DateTime            @default(now()) @db.Timestamp(3)
+  id                     Int                  @id @default(autoincrement())
+  username               String               @db.VarChar(100)
+  password               String               @db.VarChar(100)
+  name                   String               @db.VarChar(100)
+  lastname               String               @db.VarChar(100)
+  email                  String               @db.VarChar(100)
+  telephone              String?              @db.VarChar(10)
+  address                String?              @db.VarChar(255)
+  avatar                 String               @db.LongText
+  access_status          String               @db.VarChar(2)
+  role                   String               @db.VarChar(50)
+  is_active_notification Boolean              @default(true)
+  created_at             DateTime             @default(now()) @db.Timestamp(3)
   created_by             Int?
-  updated_at             DateTime            @default(now()) @updatedAt @db.Timestamp(3)
+  updated_at             DateTime             @default(now()) @updatedAt @db.Timestamp(3)
   updated_by             Int?
   ApprovedAccount        ApprovedAccount[]
   Transaction            Transaction[]
+  TransactionPayment     TransactionPayment[]
   UserOnEventJoin        UserOnEventJoin[]
   LoginLog               LoginLog[]
   ApprovedEventJoin      ApprovedEventJoin[]
@@ -226,19 +229,39 @@ model Notification {
 }
 
 model Payment {
-  id                  Int     @id @default(autoincrement())
-  status_code         String  @db.VarChar(2)
-  account_bank_number String  @db.VarChar(15)
-  account_bank_name   String  @db.VarChar(100)
+  id                  Int                @id @default(autoincrement())
+  status_code         String             @db.VarChar(2)
+  account_bank_number String             @db.VarChar(15)
+  account_bank_name   String             @db.VarChar(100)
   total_price         Decimal
-  payment_code        String  @db.VarChar(100)
-  type_payment        String  @db.VarChar(100)
-  invoice_id          Int     @unique
+  payment_code        String             @db.VarChar(100)
+  type_payment        String             @db.VarChar(100)
+  invoice_id          Int                @unique
   event_id            Int?
-  Event               Event?  @relation(fields: [event_id], references: [id])
-  Invoice             Invoice @relation(fields: [invoice_id], references: [id])
+  transpayment_id     Int                @unique
+  TransactionPayment  TransactionPayment @relation(fields: [transpayment_id], references: [id])
+  Event               Event?             @relation(fields: [event_id], references: [id])
+  Invoice             Invoice            @relation(fields: [invoice_id], references: [id])
+  created_at          DateTime           @default(now()) @db.Timestamp(3)
+  created_by          Int?
+  updated_at          DateTime           @default(now()) @updatedAt @db.Timestamp(3)
+  updated_by          Int?
 
   @@map("payment")
+}
+
+model TransactionPayment {
+  id         Int      @id @default(autoincrement())
+  status     String   @db.VarChar(2)
+  user_id    Int
+  created_at DateTime @default(now()) @db.Timestamp(3)
+  created_by Int?
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamp(3)
+  updated_by Int?
+  Payment    Payment?
+  user       User     @relation(fields: [user_id], references: [id])
+
+  @@map("transaction_payment")
 }
 
 model RecordDataEvent {

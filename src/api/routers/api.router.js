@@ -1,26 +1,5 @@
 const Controller = require('../controllers/api.controlles.js')
 const routers = [
-    //FIXME: Admin
-    {
-        method: 'POST',
-        path: '/api/create-admin',
-        config: Controller.createAdmin,
-    },
-    {
-        method: 'GET',
-        path: '/api/get-all-admin',
-        config: Controller.getAllAdmin
-    },
-    {
-        method: 'POST',
-        path: '/api/update-admin',
-        config: Controller.updateAdmin
-    },
-    {
-        method: 'POST',
-        path: '/api/delete-admin',
-        config: Controller.deleteAdmin
-    },
     //FIXME: MasterData
     {
         method: 'POST',
@@ -41,7 +20,7 @@ const routers = [
     {
         method: 'POST',
         path: '/api/upload-image-event',
-        config : Controller.uploadImageEvent
+        config: Controller.uploadImageEvent
         // options: {
         //     payload: {
         //         output: 'stream',
@@ -57,26 +36,47 @@ const routers = [
         config: Controller.getAllEvent
     },
     {
-        method : 'POST',
-        path : '/api/test-encrypt',
-        config : Controller.cryptTest
+        method: 'POST',
+        path: '/api/test-encrypt',
+        config: Controller.cryptTest
     },
     {
-        method : 'GET',
-        path : '/api/get-event-backoffice',
-        config : Controller.getEventBackoffice
+        method: 'GET',
+        path: '/api/get-event-backoffice',
+        config: Controller.getEventBackoffice
     },
     {
-        method : 'POST',
-        path : '/api/update-event-backoffice',
-        config : Controller.updateEventBackoffice
+        method: 'POST',
+        path: '/api/update-event-backoffice',
+        config: Controller.updateEventBackoffice
+    },
+    //FIXME: Admin
+    {
+        method: 'POST',
+        path: '/api/create-admin-backoffice',
+        config: Controller.createAdmin,
+    },
+    {
+        method: 'GET',
+        path: '/api/get-all-admin-backoffice',
+        config: Controller.getAllAdmin
+    },
+    {
+        method: 'POST',
+        path: '/api/update-admin-backoffice',
+        config: Controller.updateAdmin
+    },
+    {
+        method: 'POST',
+        path: '/api/delete-admin-backoffice',
+        config: Controller.deleteAdmin
     },
 
     // ******************************************************* empty ************************************// 
     {
-        method : 'GET',
-        path : '/',
-        config : Controller.emptyPath
+        method: 'GET',
+        path: '/',
+        config: Controller.emptyPath
     }
 ]
 

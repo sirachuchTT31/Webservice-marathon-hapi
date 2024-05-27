@@ -16,10 +16,10 @@ const Response = require('../../constant/response.js')
 
 //FIXME: Admin
 const createAdmin = {
-    tags : ['api'],
-    description : 'Create Admin',
-    validate : {
-        payload : validateAdmin.createAdminValidate
+    tags: ['api'],
+    description: 'Create Admin',
+    validate: {
+        payload: validateAdmin.createAdminValidate
     },
     handler: async (request, reply) => {
         try {
@@ -34,6 +34,7 @@ const createAdmin = {
                         role: 'admin'
                     }
                 })
+                let idDecode = await cryptLib.decryptAES(jwtDecode.id)
                 if (_.isEmpty(findDuplicates)) {
                     let salt = await bcrypt.genSalt(10);
                     let hash = await bcrypt.hash(value.password, salt)
@@ -43,11 +44,13 @@ const createAdmin = {
                             password: hash,
                             name: value.name,
                             lastname: value.lastname,
+                            address: value.address,
+                            telephone: value.telephone,
                             email: value.email,
                             avatar: 'https://avataaars.io/?avatarStyle=Transparent&topType=ShortHairShortCurly&accessoriesType=Round&hairColor=BrownDark&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light',
                             access_status: 'Y',
                             role: 'admin',
-                            created_by: jwtDecode.id
+                            created_by: Number(idDecode)
                         }
                     })
                     if (!_.isEmpty(response)) {
@@ -89,8 +92,8 @@ const createAdmin = {
 }
 
 const getAllAdmin = {
-    tags : ['api'],
-    description : 'Get All Admin',
+    tags: ['api'],
+    description: 'Get All Admin',
     handler: async (request, reply) => {
         try {
             const findAll = await prismaClient.user.findMany({
@@ -134,6 +137,7 @@ const updateAdmin = {
             if (!error) {
                 const token = request.headers.authorization.replace("Bearer ", "")
                 const jwtDecode = await JWT.jwtDecode(token)
+                let idDecode = await cryptLib.decryptAES(jwtDecode.id)
                 const response = await prismaClient.user.update({
                     where: {
                         id: value.id,
@@ -143,7 +147,9 @@ const updateAdmin = {
                         name: value.name,
                         lastname: value.lastname,
                         email: value.email,
-                        updated_by: jwtDecode.id
+                        address: value.address,
+                        telephone: value.telephone,
+                        updated_by: Number(idDecode)
                     }
                 })
                 if (!_.isEmpty(response)) {
@@ -334,7 +340,7 @@ const createEvent = {
                         }
                     })
                 ]);
-                console.log('t',t)
+                console.log('t', t)
                 if (!_.isEmpty(t)) {
                     baseModel.IBaseSingleResultModel = {
                         status: true,
@@ -348,7 +354,7 @@ const createEvent = {
                 else {
                     baseModel.IBaseSingleResultModel = {
                         status: false,
-                        status_code:httpResponse.STATUS_CREATED.status_code,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
                         message: httpResponse.STATUS_500.message,
                         error_message: '',
                         result: ''
@@ -480,14 +486,14 @@ const getAllEvent = {
 
 // *********************************************** Back-ofiice **********************************************
 const getEventBackoffice = {
-    handler : async (request , reply) => {
-        try{
+    handler: async (request, reply) => {
+        try {
             const getEvent = await prismaClient.event.findMany(
                 {
-                    where : {
-                        status_code : '01'
-                    } ,
-                    include : {
+                    where: {
+                        status_code: '01'
+                    },
+                    include: {
                         MasterLocation: {
                             select: {
                                 id: true,
@@ -500,26 +506,26 @@ const getEventBackoffice = {
                     }
                 }
             );
-            if(!_.isEmpty(getEvent)){
+            if (!_.isEmpty(getEvent)) {
                 baseModel.IBaseCollectionResultsModel = {
-                    status : true ,
-                    status_code : httpResponse.STATUS_200.status_code ,
-                    message : httpResponse.STATUS_200.message,
-                    results : getEvent
+                    status: true,
+                    status_code: httpResponse.STATUS_200.status_code,
+                    message: httpResponse.STATUS_200.message,
+                    results: getEvent
                 }
                 return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
             }
             else {
                 baseModel.IBaseCollectionResultsModel = {
-                    status : false ,
-                    status_code : httpResponse.STATUS_200.status_code ,
-                    message : httpResponse.STATUS_200.message,
-                    results : []
+                    status: false,
+                    status_code: httpResponse.STATUS_200.status_code,
+                    message: httpResponse.STATUS_200.message,
+                    results: []
                 }
                 return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
             }
         }
-        catch(e){
+        catch (e) {
             console.log(e);
             return reply.response(Response.InternalServerError(e.message))
         }
@@ -527,50 +533,50 @@ const getEventBackoffice = {
 }
 
 const updateEventBackoffice = {
-    handler : async (request , reply) => {
-        try{
+    handler: async (request, reply) => {
+        try {
             const payload = request.payload
             const token = request.headers.authorization
             const { value, error } = validateEvent.updateEventValidate.validate(payload);
-            if(!error){
+            if (!error) {
                 const updateEvent = await prismaClient.transaction.update(
                     {
-                        data : {
-                            status : value.status,
-                            Event : {
-                                update : {
-                                    status_code : value.status
+                        data: {
+                            status: value.status,
+                            Event: {
+                                update: {
+                                    status_code: value.status
                                 }
                             }
                         },
-                        where : {
-                            id : Number(value.transaction_id)
+                        where: {
+                            id: Number(value.transaction_id)
                         },
-                        include : {
-                            Event : true
+                        include: {
+                            Event: true
                         }
                     });
-                    if(!_.isEmpty(updateEvent)){
-                        baseModel.IBaseNocontentModel = {
-                            status : true,
-                            message : httpResponse.STATUS_201_NOCONENT.message,
-                            status_code : httpResponse.STATUS_200.status_code,
-                        }
-                        return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
-                    }
-                    
+                if (!_.isEmpty(updateEvent)) {
                     baseModel.IBaseNocontentModel = {
-                        status : false ,
-                        status_code : httpResponse.STATUS_200.status_code,
-                        message : 'Updated failed'
+                        status: true,
+                        message: httpResponse.STATUS_201_NOCONENT.message,
+                        status_code: httpResponse.STATUS_200.status_code,
                     }
                     return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                }
+
+                baseModel.IBaseNocontentModel = {
+                    status: false,
+                    status_code: httpResponse.STATUS_200.status_code,
+                    message: 'Updated failed'
+                }
+                return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
             }
             else {
                 return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
             }
         }
-        catch(e){
+        catch (e) {
             console.log(e);
             return reply.response(Response.InternalServerError(e.message))
         }
@@ -598,8 +604,8 @@ const cryptTest = {
 
 //******************************************************* empty ************************** */
 const emptyPath = {
-    auth : false,
-    handler : async (request , h) => {
+    auth: false,
+    handler: async (request, h) => {
         return "<h1>Welcome to API Vesion 1.0.0</h1>"
     }
 }

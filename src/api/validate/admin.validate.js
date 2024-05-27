@@ -6,6 +6,8 @@ const createAdminValidate = Joi.object().keys({
     name: Joi.string().required(),
     lastname: Joi.string().required(),
     email: Joi.string().required(),
+    telephone: Joi.string().required(),
+    address: Joi.string().required(),
 });
 
 const updateAdminValidate = Joi.object().keys({
@@ -13,10 +15,12 @@ const updateAdminValidate = Joi.object().keys({
     name: Joi.string().required(),
     lastname: Joi.string().required(),
     email: Joi.string().required(),
+    telephone: Joi.string().required(),
+    address: Joi.string().required(),
 });
 
 const deleteAdminValidate = Joi.object().keys({
-    id: Joi.string().required()
+    id: Joi.number().required()
 })
 module.exports = {
     createAdminValidate,
