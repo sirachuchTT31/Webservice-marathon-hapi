@@ -221,7 +221,7 @@ const registerOrganizer = {
                             lastname: value.lastname,
                             email: value.email,
                             avatar: 'https://avataaars.io/?avatarStyle=Transparent&topType=ShortHairShortCurly&accessoriesType=Round&hairColor=BrownDark&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light',
-                            access_status: 'N',
+                            access_status: 'Y',
                             role: 'organizer'
                         }
                     })
