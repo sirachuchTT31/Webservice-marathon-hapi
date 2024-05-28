@@ -10,273 +10,20 @@ const validateAdmin = require('../validate/admin.validate.js')
 const validateMasterData = require('../validate/master-data.validate.js')
 const validateEvent = require('../validate/event.validate.js')
 const validateBackoffice = require('../validate/backoffice.validate.js')
+const validateEventMember = require('../validate/event-member.validate.js')
 const JWT = require('../../utils/authentication.js')
 const Handler = require('../handler/api.handler.js');
 const cryptLib = require('../../utils/crypt-lib.js')
 const Response = require('../../constant/response.js')
 
-//FIXME: Admin
-const createAdmin = {
-    tags: ['api'],
-    description: 'Create Admin',
-    validate: {
-        payload: validateAdmin.createAdminValidate
-    },
-    handler: async (request, reply) => {
-        try {
-            const payload = request.payload
-            const { value, error } = validateAdmin.createAdminValidate.validate(payload)
-            if (!error) {
-                const token = request.headers.authorization.replace("Bearer ", "")
-                const jwtDecode = await JWT.jwtDecode(token)
-                const findDuplicates = await prismaClient.user.findFirst({
-                    where: {
-                        username: value.username,
-                        role: 'admin'
-                    }
-                })
-                let idDecode = await cryptLib.decryptAES(jwtDecode.id)
-                if (_.isEmpty(findDuplicates)) {
-                    let salt = await bcrypt.genSalt(10);
-                    let hash = await bcrypt.hash(value.password, salt)
-                    const response = await prismaClient.user.create({
-                        data: {
-                            username: value.username,
-                            password: hash,
-                            name: value.name,
-                            lastname: value.lastname,
-                            address: value.address,
-                            telephone: value.telephone,
-                            email: value.email,
-                            avatar: 'https://avataaars.io/?avatarStyle=Transparent&topType=ShortHairShortCurly&accessoriesType=Round&hairColor=BrownDark&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light',
-                            access_status: 'Y',
-                            role: 'admin',
-                            created_by: Number(idDecode)
-                        }
-                    })
-                    if (!_.isEmpty(response)) {
-                        baseModel.IBaseNocontentModel = {
-                            status: true,
-                            status_code: httpResponse.STATUS_CREATED.status_code,
-                            message: httpResponse.STATUS_CREATED.message,
-                            error_message: '',
-                        }
-                        return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
-                    }
-                    baseModel.IBaseNocontentModel = {
-                        status: false,
-                        status_code: httpResponse.STATUS_500.status_code,
-                        message: httpResponse.STATUS_500.message,
-                        error_message: httpResponse.STATUS_500.message,
-                    }
-                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
-                }
-                else {
-                    baseModel.IBaseNocontentModel = {
-                        status: false,
-                        status_code: httpResponse.STATUS_400.status_code,
-                        message: 'Invalid Duplicate Username',
-                        error_message: httpResponse.STATUS_400.message,
-                    }
-                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
-                }
-            }
-            else {
-                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
-            }
-        }
-        catch (e) {
-            console.log(e)
-            return reply.response(Response.InternalServerError(e.message))
-        }
-    }
-}
-
-const getAllAdmin = {
-    tags: ['api'],
-    description: 'Get All Admin',
-    handler: async (request, reply) => {
-        try {
-            const findAll = await prismaClient.user.findMany({
-                where: {
-                    role: 'admin'
-                },
-                orderBy: {
-                    created_at: 'desc'
-                }
-            })
-            if (!_.isEmpty(findAll)) {
-                baseModel.IBaseCollectionResultsModel = {
-                    status: true,
-                    status_code: httpResponse.STATUS_200.status_code,
-                    message: httpResponse.STATUS_200.message,
-                    results: findAll
-                }
-                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
-            }
-            else {
-                baseModel.IBaseCollectionResultsModel = {
-                    status: false,
-                    status_code: httpResponse.STATUS_500.message,
-                    message: httpResponse.STATUS_500.message,
-                    results: []
-                }
-                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
-            }
-        }
-        catch (e) {
-            return reply.response(Response.InternalServerError(e.message))
-        }
-    }
-}
-
-const updateAdmin = {
-    handler: async (request, reply) => {
-        try {
-            const payload = request.payload
-            const { value, error } = validateAdmin.updateAdminValidate.validate(payload)
-            if (!error) {
-                const token = request.headers.authorization.replace("Bearer ", "")
-                const jwtDecode = await JWT.jwtDecode(token)
-                let idDecode = await cryptLib.decryptAES(jwtDecode.id)
-                const response = await prismaClient.user.update({
-                    where: {
-                        id: value.id,
-                        role: 'admin'
-                    },
-                    data: {
-                        name: value.name,
-                        lastname: value.lastname,
-                        email: value.email,
-                        address: value.address,
-                        telephone: value.telephone,
-                        updated_by: Number(idDecode)
-                    }
-                })
-                if (!_.isEmpty(response)) {
-                    baseModel.IBaseNocontentModel = {
-                        status: true,
-                        status_code: httpResponse.STATUS_CREATED.status_code,
-                        message: 'Updated successfully',
-                        error_message: '',
-                    }
-                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
-                }
-                else {
-                    baseModel.IBaseNocontentModel = {
-                        status: false,
-                        status_code: httpResponse.STATUS_400.status_code,
-                        message: 'Updated failed',
-                        error_message: httpResponse.STATUS_400.message,
-                    }
-                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
-                }
-            }
-            else {
-                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
-            }
-        }
-        catch (e) {
-            console.error(e);
-            return reply.response(Response.InternalServerError(e.message))
-        }
-    }
-}
-
-const deleteAdmin = {
-    handler: async (request, reply) => {
-        try {
-            const payload = request.payload
-            const { value, error } = validateAdmin.deleteAdminValidate.validate(payload)
-            if (!error) {
-                const response = await prismaClient.user.delete({
-                    where: {
-                        id: value.id
-                    }
-                })
-                if (!_.isEmpty(response)) {
-                    baseModel.IBaseNocontentModel = {
-                        status: true,
-                        status_code: httpResponse.STATUS_CREATED.status_code,
-                        message: 'Delete successfully',
-                        error_message: '',
-                    }
-                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
-                }
-                else {
-                    baseModel.IBaseNocontentModel = {
-                        status: false,
-                        status_code: httpResponse.STATUS_400.status_code,
-                        message: 'Delete failed',
-                        error_message: httpResponse.STATUS_400.message,
-                    }
-                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
-                }
-            }
-            else {
-                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
-            }
-        }
-        catch (e) {
-            console.log(e);
-            return reply.response(Response.InternalServerError(e.message))
-        }
-    }
-}
-
-//FIXME: Master data 
-// TODO: Dont test
-const createMasterLocation = {
-    handler: async (request, reply) => {
-        try {
-            const token = request.headers.authorization.replace("Bearer ", "")
-            const jwtDecode = await JWT.jwtDecode(token)
-            const payload = request.payload
-            const { value, error } = validateMasterData.createMasterLocation.validate(payload)
-            if (!error) {
-                const response = await prismaClient.masterLocation.create({
-                    data: {
-                        province: value.province,
-                        address: value.address,
-                        district: value.district,
-                        zipcode: value.zipcode,
-                        created_by: jwtDecode.id
-                    }
-                });
-                if (!_.isEmpty(response)) {
-                    baseModel.IBaseNocontentModel = {
-                        status: true,
-                        status_code: httpResponse.STATUS_CREATED.status_code,
-                        message: 'Create successfully',
-                        error_message: '',
-                    }
-                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
-                }
-                else {
-                    baseModel.IBaseNocontentModel = {
-                        status: false,
-                        status_code: httpResponse.STATUS_CREATED.status_code,
-                        message: 'Create failed',
-                        error_message: httpResponse.STATUS_CREATED.message,
-                    }
-                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
-                }
-            }
-            else {
-                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
-            }
-        }
-        catch (e) {
-            console.log(e);
-            return reply.response(Response.InternalServerError(e.message))
-        }
-    }
-}
-// TODO: Dont test
+//FIXME: Master data
 const getAllMasterLocation = {
     handler: async (request, reply) => {
         try {
             const findAll = await prismaClient.masterLocation.findMany({
+                where: {
+                    is_active: true
+                },
                 orderBy: {
                     province: 'asc'
                 }
@@ -307,6 +54,47 @@ const getAllMasterLocation = {
     }
 }
 
+//FIXME: Flow 
+const createRegisterEvent = {
+    handler : async (request , reply) => {
+        try{
+            const payload = request.payload;
+            const token = request.headers.authorization;
+            const {value , error} = validateEventMember.createRegisterEvent.validate(payload);
+            if(!error){
+                const jwtDecode = await JWT.jwtDecode(token);
+                let idDecode = await cryptLib.decryptAES(jwtDecode.id);
+                const t = await prismaClient.$transaction([
+                    prismaClient.transaction.create({
+                        data : {
+                            status : '11',
+                            user_id : Number(idDecode),
+                            created_by : Number(idDecode),
+                            type: 'JoinEvent',
+                            EventJoin : {
+                                create : {
+                                    description : value.description,
+                                    event_id : value.event_id,
+                                    created_by : Number(idDecode),
+                                    // RecordDataEvent : {
+
+                                    // }
+                                }
+                            },
+                        }
+                    })
+                ])
+            }
+            else {
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
+            }
+        }
+        catch (e) {
+            console.log(e);
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
 const createEvent = {
     handler: async (request, reply) => {
         try {
@@ -486,41 +274,29 @@ const getAllEvent = {
 }
 
 // *********************************************** Back-ofiice **********************************************
-const getEventBackoffice = {
+//FIXME: Master data 
+const getAllMasterLocationBackoffice = {
     handler: async (request, reply) => {
         try {
-            const getEvent = await prismaClient.event.findMany(
-                {
-                    where: {
-                        status_code: '01'
-                    },
-                    include: {
-                        MasterLocation: {
-                            select: {
-                                id: true,
-                                province: true,
-                                address: true,
-                                zipcode: true,
-                                district: true
-                            }
-                        }
-                    }
+            const findAll = await prismaClient.masterLocation.findMany({
+                orderBy: {
+                    province: 'asc'
                 }
-            );
-            if (!_.isEmpty(getEvent)) {
+            });
+            if (!_.isEmpty(findAll)) {
                 baseModel.IBaseCollectionResultsModel = {
                     status: true,
                     status_code: httpResponse.STATUS_200.status_code,
                     message: httpResponse.STATUS_200.message,
-                    results: getEvent
+                    results: findAll
                 }
                 return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
             }
             else {
                 baseModel.IBaseCollectionResultsModel = {
                     status: false,
-                    status_code: httpResponse.STATUS_200.status_code,
-                    message: httpResponse.STATUS_200.message,
+                    status_code: httpResponse.STATUS_201_NOCONENT.status_code,
+                    message: httpResponse.STATUS_201_NOCONENT.message,
                     results: []
                 }
                 return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
@@ -533,45 +309,42 @@ const getEventBackoffice = {
     }
 }
 
-const updateEventBackoffice = {
+const createMasterLocationBackoffice = {
     handler: async (request, reply) => {
         try {
+            const token = request.headers.authorization.replace("Bearer ", "")
+            const jwtDecode = await JWT.jwtDecode(token)
             const payload = request.payload
-            const token = request.headers.authorization
-            const { value, error } = validateEvent.updateEventValidate.validate(payload);
+            const { value, error } = validateMasterData.createMasterLocation.validate(payload)
+            let idDecode = await cryptLib.decryptAES(jwtDecode.id)
             if (!error) {
-                const updateEvent = await prismaClient.transaction.update(
-                    {
-                        data: {
-                            status: value.status,
-                            Event: {
-                                update: {
-                                    status_code: value.status
-                                }
-                            }
-                        },
-                        where: {
-                            id: Number(value.transaction_id)
-                        },
-                        include: {
-                            Event: true
-                        }
-                    });
-                if (!_.isEmpty(updateEvent)) {
+                const response = await prismaClient.masterLocation.create({
+                    data: {
+                        province: value.province,
+                        address: value.address,
+                        district: value.district,
+                        zipcode: value.zipcode,
+                        created_by: Number(idDecode)
+                    }
+                });
+                if (!_.isEmpty(response)) {
                     baseModel.IBaseNocontentModel = {
                         status: true,
-                        message: httpResponse.STATUS_201_NOCONENT.message,
-                        status_code: httpResponse.STATUS_200.status_code,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
+                        message: 'Create successfully',
+                        error_message: '',
                     }
-                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
                 }
-
-                baseModel.IBaseNocontentModel = {
-                    status: false,
-                    status_code: httpResponse.STATUS_200.status_code,
-                    message: 'Updated failed'
+                else {
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
+                        message: 'Create failed',
+                        error_message: httpResponse.STATUS_CREATED.message,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
                 }
-                return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
             }
             else {
                 return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
@@ -579,6 +352,345 @@ const updateEventBackoffice = {
         }
         catch (e) {
             console.log(e);
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
+
+const updateMasterLocationBackoffice = {
+    handler: async (request, reply) => {
+        try {
+            const payload = request.payload;
+            const { value, error } = validateBackoffice.updateMasterLocationValidate(payload)
+            if (!error) {
+                const token = request.headers.authorization.replace("Bearer ", "")
+                const jwtDecode = await JWT.jwtDecode(token)
+                let idDecode = await cryptLib.decryptAES(jwtDecode.id)
+                const response = await prismaClient.masterLocation.update({
+                    where : {
+                        id : value.id
+                    },
+                    data : {
+                        province : value.province,
+                        district : value.district,
+                        zipcode : value.zipcode,
+                        address : value.address,
+                        updated_by : Number(idDecode)
+                    }
+                });
+                if (!_.isEmpty(response)) {
+                    baseModel.IBaseNocontentModel = {
+                        status: true,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
+                        message: 'Updated successfully',
+                        error_message: '',
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+                else {
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_400.status_code,
+                        message: 'Updated failed',
+                        error_message: httpResponse.STATUS_400.message,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+            }
+            else {
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
+            }
+        }
+        catch (e) {
+            console.error(e);
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
+
+const deleteMasterLocationBackoffice = {
+    handler: async (request, reply) => {
+        try {
+            const payload = request.payload
+            const { value, error } = validateBackoffice.deleteMasterLocationValidate.validate(payload)
+            if (!error) {
+                const response = await prismaClient.masterLocation.delete({
+                    where: {
+                        id: value.id
+                    }
+                })
+                if (!_.isEmpty(response)) {
+                    baseModel.IBaseNocontentModel = {
+                        status: true,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
+                        message: 'Delete successfully',
+                        error_message: '',
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+                else {
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_400.status_code,
+                        message: 'Delete failed',
+                        error_message: httpResponse.STATUS_400.message,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+            }
+            else {
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
+            }
+        }
+        catch (e) {
+            console.log(e);
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
+
+//FIXME: Admin
+const getAllAdminBackoffice = {
+    tags: ['api'],
+    description: 'Get All Admin',
+    handler: async (request, reply) => {
+        try {
+            const findAll = await prismaClient.user.findMany({
+                where: {
+                    role: 'admin'
+                },
+                orderBy: {
+                    created_at: 'desc'
+                }
+            })
+            if (!_.isEmpty(findAll)) {
+                baseModel.IBaseCollectionResultsModel = {
+                    status: true,
+                    status_code: httpResponse.STATUS_200.status_code,
+                    message: httpResponse.STATUS_200.message,
+                    results: findAll
+                }
+                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
+            }
+            else {
+                baseModel.IBaseCollectionResultsModel = {
+                    status: false,
+                    status_code: httpResponse.STATUS_500.message,
+                    message: httpResponse.STATUS_500.message,
+                    results: []
+                }
+                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
+            }
+        }
+        catch (e) {
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
+
+const createAdminBackoffice = {
+    tags: ['api'],
+    description: 'Create Admin',
+    validate: {
+        payload: validateAdmin.createAdminValidate
+    },
+    handler: async (request, reply) => {
+        try {
+            const payload = request.payload
+            const { value, error } = validateAdmin.createAdminValidate.validate(payload)
+            if (!error) {
+                const token = request.headers.authorization.replace("Bearer ", "")
+                const jwtDecode = await JWT.jwtDecode(token)
+                const findDuplicates = await prismaClient.user.findFirst({
+                    where: {
+                        username: value.username,
+                        role: 'admin'
+                    }
+                })
+                let idDecode = await cryptLib.decryptAES(jwtDecode.id)
+                if (_.isEmpty(findDuplicates)) {
+                    let salt = await bcrypt.genSalt(10);
+                    let hash = await bcrypt.hash(value.password, salt)
+                    const response = await prismaClient.user.create({
+                        data: {
+                            username: value.username,
+                            password: hash,
+                            name: value.name,
+                            lastname: value.lastname,
+                            address: value.address,
+                            telephone: value.telephone,
+                            email: value.email,
+                            avatar: 'https://avataaars.io/?avatarStyle=Transparent&topType=ShortHairShortCurly&accessoriesType=Round&hairColor=BrownDark&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light',
+                            access_status: 'Y',
+                            role: 'admin',
+                            created_by: Number(idDecode)
+                        }
+                    })
+                    if (!_.isEmpty(response)) {
+                        baseModel.IBaseNocontentModel = {
+                            status: true,
+                            status_code: httpResponse.STATUS_CREATED.status_code,
+                            message: httpResponse.STATUS_CREATED.message,
+                            error_message: '',
+                        }
+                        return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                    }
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_500.status_code,
+                        message: httpResponse.STATUS_500.message,
+                        error_message: httpResponse.STATUS_500.message,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                }
+                else {
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_400.status_code,
+                        message: 'Invalid Duplicate Username',
+                        error_message: httpResponse.STATUS_400.message,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                }
+            }
+            else {
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
+            }
+        }
+        catch (e) {
+            console.log(e)
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
+
+const updateAdminBackoffice = {
+    handler: async (request, reply) => {
+        try {
+            const payload = request.payload
+            const { value, error } = validateAdmin.updateAdminValidate.validate(payload)
+            if (!error) {
+                const token = request.headers.authorization.replace("Bearer ", "")
+                const jwtDecode = await JWT.jwtDecode(token)
+                let idDecode = await cryptLib.decryptAES(jwtDecode.id)
+                const response = await prismaClient.user.update({
+                    where: {
+                        id: value.id,
+                        role: 'admin'
+                    },
+                    data: {
+                        name: value.name,
+                        lastname: value.lastname,
+                        email: value.email,
+                        address: value.address,
+                        telephone: value.telephone,
+                        updated_by: Number(idDecode)
+                    }
+                })
+                if (!_.isEmpty(response)) {
+                    baseModel.IBaseNocontentModel = {
+                        status: true,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
+                        message: 'Updated successfully',
+                        error_message: '',
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+                else {
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_400.status_code,
+                        message: 'Updated failed',
+                        error_message: httpResponse.STATUS_400.message,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+            }
+            else {
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
+            }
+        }
+        catch (e) {
+            console.error(e);
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
+
+const deleteAdminBackoffice = {
+    handler: async (request, reply) => {
+        try {
+            const payload = request.payload
+            const { value, error } = validateAdmin.deleteAdminValidate.validate(payload)
+            if (!error) {
+                const response = await prismaClient.user.delete({
+                    where: {
+                        id: value.id
+                    }
+                })
+                if (!_.isEmpty(response)) {
+                    baseModel.IBaseNocontentModel = {
+                        status: true,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
+                        message: 'Delete successfully',
+                        error_message: '',
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+                else {
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_400.status_code,
+                        message: 'Delete failed',
+                        error_message: httpResponse.STATUS_400.message,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+            }
+            else {
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
+            }
+        }
+        catch (e) {
+            console.log(e);
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
+
+//FIXME: Organizer
+const getAllOrganizerBackoffice = {
+    handler: async (reqeust, reply) => {
+        try {
+            const findAll = prismaClient.user.findMany({
+                where: {
+                    role: 'organizer'
+                },
+                orderBy: {
+                    created_at: 'desc'
+                }
+            });
+            if (!_.isEmpty(findAll)) {
+                baseModel.IBaseCollectionResultsModel = {
+                    status: true,
+                    status_code: httpResponse.STATUS_200.status_code,
+                    message: httpResponse.STATUS_200.message,
+                    results: findAll
+                }
+                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
+            }
+            else {
+                baseModel.IBaseCollectionResultsModel = {
+                    status: false,
+                    status_code: httpResponse.STATUS_500.message,
+                    message: httpResponse.STATUS_500.message,
+                    results: []
+                }
+                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
+            }
+        }
+        catch (e) {
+            console.log(e)
             return reply.response(Response.InternalServerError(e.message))
         }
     }
@@ -749,6 +861,43 @@ const deleteOrganizerBackoffice = {
         }
     }
 }
+//FIXME: Member
+const getAllMemberBackoffice = {
+    handler: async (reqeust, reply) => {
+        try {
+            const findAll = prismaClient.user.findMany({
+                where: {
+                    role: 'member'
+                },
+                orderBy: {
+                    created_at: 'desc'
+                }
+            });
+            if (!_.isEmpty(findAll)) {
+                baseModel.IBaseCollectionResultsModel = {
+                    status: true,
+                    status_code: httpResponse.STATUS_200.status_code,
+                    message: httpResponse.STATUS_200.message,
+                    results: findAll
+                }
+                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
+            }
+            else {
+                baseModel.IBaseCollectionResultsModel = {
+                    status: false,
+                    status_code: httpResponse.STATUS_500.message,
+                    message: httpResponse.STATUS_500.message,
+                    results: []
+                }
+                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
+            }
+        }
+        catch (e) {
+            console.log(e)
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
 
 const createMemberBackoffice = {
     handler: async (request, reply) => {
@@ -913,7 +1062,122 @@ const deleteMemberBackoffice = {
             console.log(e);
             return reply.response(Response.InternalServerError(e.message))
         }
-    }  
+    }
+}
+
+//FIXME: Event
+const createEventBackoffice = {
+    handler : async (request , reply) => {
+        try{
+
+        }
+        catch(e){
+            console.log(e);
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
+
+const getEventBackoffice = {
+    handler: async (request, reply) => {
+        try {
+            const getEvent = await prismaClient.event.findMany(
+                {
+                    where: {
+                        status_code: '01'
+                    },
+                    include: {
+                        MasterLocation: {
+                            select: {
+                                id: true,
+                                province: true,
+                                address: true,
+                                zipcode: true,
+                                district: true
+                            }
+                        }
+                    }
+                }
+            );
+            if (!_.isEmpty(getEvent)) {
+                baseModel.IBaseCollectionResultsModel = {
+                    status: true,
+                    status_code: httpResponse.STATUS_200.status_code,
+                    message: httpResponse.STATUS_200.message,
+                    results: getEvent
+                }
+                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
+            }
+            else {
+                baseModel.IBaseCollectionResultsModel = {
+                    status: false,
+                    status_code: httpResponse.STATUS_200.status_code,
+                    message: httpResponse.STATUS_200.message,
+                    results: []
+                }
+                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
+            }
+        }
+        catch (e) {
+            console.log(e);
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
+
+const updateEventBackoffice = {
+    handler: async (request, reply) => {
+        try {
+            const payload = request.payload
+            const token = request.headers.authorization
+            const { value, error } = validateEvent.updateEventValidate.validate(payload);
+            if (!error) {
+                const jwtDecode = await JWT.jwtDecode(token)
+                let idDecode = await cryptLib.decryptAES(jwtDecode.id)
+                const updateEvent = await prismaClient.transaction.update(
+                    {
+                        data: {
+                            status: value.status,
+                            updated_by : Number(idDecode),
+                            Event: {
+                                update: {
+                                    status_code: value.status,
+                                    updated_by : Number(idDecode)
+                                }
+                            }
+                        },
+                        where: {
+                            id: Number(value.transaction_id)
+                        },
+                        include: {
+                            Event: true
+                        }
+                    });
+                if (!_.isEmpty(updateEvent)) {
+                    baseModel.IBaseNocontentModel = {
+                        status: true,
+                        message: httpResponse.STATUS_201_NOCONENT.message,
+                        status_code: httpResponse.STATUS_200.status_code,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                }
+
+                baseModel.IBaseNocontentModel = {
+                    status: false,
+                    status_code: httpResponse.STATUS_200.status_code,
+                    message: 'Updated failed'
+                }
+                return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+            }
+            else {
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
+            }
+        }
+        catch (e) {
+            console.log(e);
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
 }
 
 const cryptTest = {
@@ -946,13 +1210,8 @@ const emptyPath = {
 
 module.exports = {
     //Admin
-    createAdmin,
-    getAllAdmin,
-    updateAdmin,
-    deleteAdmin,
 
     //MasterData 
-    createMasterLocation,
     getAllMasterLocation,
 
     //Event 
@@ -964,14 +1223,24 @@ module.exports = {
     cryptTest,
 
     //Back-office 
+    getAllMasterLocationBackoffice,
+    createMasterLocationBackoffice,
+    updateMasterLocationBackoffice,
+    deleteMasterLocationBackoffice,
     getEventBackoffice,
     updateEventBackoffice,
+    getAllOrganizerBackoffice,
     createOrganizerBackoffice,
     updateOrganizerBackoffice,
     deleteOrganizerBackoffice,
+    getAllMemberBackoffice,
     createMemberBackoffice,
     updateMemberBackoffice,
     deleteMemberBackoffice,
+    getAllAdminBackoffice,
+    createAdminBackoffice,
+    updateAdminBackoffice,
+    deleteAdminBackoffice,
 
 
 

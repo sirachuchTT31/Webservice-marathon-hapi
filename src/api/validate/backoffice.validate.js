@@ -46,6 +46,18 @@ const deleteMemberValidate = Joi.object().keys({
     id: Joi.number().required()
 });
 
+//Master location
+const updateMasterLocationValidate = Joi.object().keys({
+    id : Joi.number().required(),
+    province: Joi.string().required(),
+    district: Joi.string().required(),
+    zipcode: Joi.string().required(),
+    address: Joi.string().required()
+});
+
+const deleteMasterLocationValidate = Joi.object().keys({
+    id: Joi.number().required()
+});
 
 module.exports = {
     createOrganizerValidate,
@@ -53,5 +65,8 @@ module.exports = {
     deleteOrganizerValidate,
     createMemberValidate,
     updateMemberValidate,
-    deleteMemberValidate
+    deleteMemberValidate,
+    //Master Location 
+    updateMasterLocationValidate,
+    deleteMasterLocationValidate
 }
