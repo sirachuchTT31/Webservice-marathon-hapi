@@ -71,6 +71,11 @@ const routers = [
         path: '/api/delete-admin-backoffice',
         config: Controller.deleteAdmin
     },
+    {
+        method : 'POST',
+        path : '/api/create-organizer-backoffice',
+        config : Controller.createOrganizerBackoffice
+    },
 
     // ******************************************************* empty ************************************// 
     {

@@ -9,6 +9,7 @@ const httpResponse = require('../../constant/http-response.js')
 const validateAdmin = require('../validate/admin.validate.js')
 const validateMasterData = require('../validate/master-data.validate.js')
 const validateEvent = require('../validate/event.validate.js')
+const validateBackoffice = require('../validate/backoffice.validate.js')
 const JWT = require('../../utils/authentication.js')
 const Handler = require('../handler/api.handler.js');
 const cryptLib = require('../../utils/crypt-lib.js')
@@ -583,6 +584,78 @@ const updateEventBackoffice = {
     }
 }
 
+const createOrganizerBackoffice = {
+    handler: async (request, reply) => {
+        try {
+            const payload = request.payload;
+            const token = request.headers.authorization;
+            const { value, error } = validateBackoffice.createOrganizerValidate(payload);
+            if (!error) {
+                const token = request.headers.authorization.replace("Bearer ", "")
+                const jwtDecode = await JWT.jwtDecode(token)
+                const findDuplicates = await prismaClient.user.findFirst({
+                    where: {
+                        username: value.username,
+                        role: 'organizer'
+                    }
+                })
+                let idDecode = await cryptLib.decryptAES(jwtDecode.id);
+                if (_.isEmpty(findDuplicates)) {
+                    let salt = await bcrypt.genSalt(10);
+                    let hash = await bcrypt.hash(value.password, salt)
+                    const response = await prismaClient.user.create({
+                        data: {
+                            username: value.username,
+                            password: hash,
+                            name: value.name,
+                            lastname: value.lastname,
+                            address: value.address,
+                            telephone: value.telephone,
+                            email: value.email,
+                            avatar: 'https://avataaars.io/?avatarStyle=Transparent&topType=ShortHairShortCurly&accessoriesType=Round&hairColor=BrownDark&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light',
+                            access_status: 'Y',
+                            role: 'organizer',
+                            created_by: Number(idDecode)
+                        }
+                    })
+                    if (!_.isEmpty(response)) {
+                        baseModel.IBaseNocontentModel = {
+                            status: true,
+                            status_code: httpResponse.STATUS_CREATED.status_code,
+                            message: httpResponse.STATUS_CREATED.message,
+                            error_message: '',
+                        }
+                        return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                    }
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_500.status_code,
+                        message: httpResponse.STATUS_500.message,
+                        error_message: httpResponse.STATUS_500.message,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                }
+                else {
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_400.status_code,
+                        message: 'Invalid Duplicate Username',
+                        error_message: httpResponse.STATUS_400.message,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                }
+            }
+            else {
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
+            }
+        }
+        catch (e) {
+            console.log(e)
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
+
 const cryptTest = {
     auth: false,
     handler: async (request, reply) => {
@@ -633,6 +706,7 @@ module.exports = {
     //Back-office 
     getEventBackoffice,
     updateEventBackoffice,
+    createOrganizerBackoffice,
 
 
     //*************** emtyp ************** */
