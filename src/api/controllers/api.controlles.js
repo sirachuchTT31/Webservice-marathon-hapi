@@ -656,6 +656,266 @@ const createOrganizerBackoffice = {
     }
 }
 
+const updateOrganizerBackoffice = {
+    handler: async (request, reply) => {
+        try {
+            const payload = request.payload
+            const { value, error } = validateBackoffice.updateOrganizerValidate.validate(payload)
+            if (!error) {
+                const token = request.headers.authorization.replace("Bearer ", "")
+                const jwtDecode = await JWT.jwtDecode(token)
+                let idDecode = await cryptLib.decryptAES(jwtDecode.id)
+                const response = await prismaClient.user.update({
+                    where: {
+                        id: value.id,
+                        role: 'organizer'
+                    },
+                    data: {
+                        name: value.name,
+                        lastname: value.lastname,
+                        email: value.email,
+                        address: value.address,
+                        telephone: value.telephone,
+                        updated_by: Number(idDecode)
+                    }
+                })
+                if (!_.isEmpty(response)) {
+                    baseModel.IBaseNocontentModel = {
+                        status: true,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
+                        message: 'Updated successfully',
+                        error_message: '',
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+                else {
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_400.status_code,
+                        message: 'Updated failed',
+                        error_message: httpResponse.STATUS_400.message,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+            }
+            else {
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
+            }
+        }
+        catch (e) {
+            console.error(e);
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
+
+const deleteOrganizerBackoffice = {
+    handler: async (request, reply) => {
+        try {
+            const payload = request.payload
+            const { value, error } = validateBackoffice.deleteOrganizerValidate(payload)
+            if (!error) {
+                const response = await prismaClient.user.delete({
+                    where: {
+                        id: value.id
+                    }
+                })
+                if (!_.isEmpty(response)) {
+                    baseModel.IBaseNocontentModel = {
+                        status: true,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
+                        message: 'Delete successfully',
+                        error_message: '',
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+                else {
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_400.status_code,
+                        message: 'Delete failed',
+                        error_message: httpResponse.STATUS_400.message,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+            }
+            else {
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
+            }
+        }
+        catch (e) {
+            console.log(e);
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
+
+const createMemberBackoffice = {
+    handler: async (request, reply) => {
+        try {
+            const payload = request.payload;
+            const token = request.headers.authorization;
+            const { value, error } = validateBackoffice.createMemberValidate(payload);
+            if (!error) {
+                const token = request.headers.authorization.replace("Bearer ", "")
+                const jwtDecode = await JWT.jwtDecode(token)
+                const findDuplicates = await prismaClient.user.findFirst({
+                    where: {
+                        username: value.username,
+                        role: 'member'
+                    }
+                })
+                let idDecode = await cryptLib.decryptAES(jwtDecode.id);
+                if (_.isEmpty(findDuplicates)) {
+                    let salt = await bcrypt.genSalt(10);
+                    let hash = await bcrypt.hash(value.password, salt)
+                    const response = await prismaClient.user.create({
+                        data: {
+                            username: value.username,
+                            password: hash,
+                            name: value.name,
+                            lastname: value.lastname,
+                            address: value.address,
+                            telephone: value.telephone,
+                            email: value.email,
+                            avatar: 'https://avataaars.io/?avatarStyle=Transparent&topType=ShortHairShortCurly&accessoriesType=Round&hairColor=BrownDark&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light',
+                            access_status: 'Y',
+                            role: 'member',
+                            created_by: Number(idDecode)
+                        }
+                    })
+                    if (!_.isEmpty(response)) {
+                        baseModel.IBaseNocontentModel = {
+                            status: true,
+                            status_code: httpResponse.STATUS_CREATED.status_code,
+                            message: httpResponse.STATUS_CREATED.message,
+                            error_message: '',
+                        }
+                        return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                    }
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_500.status_code,
+                        message: httpResponse.STATUS_500.message,
+                        error_message: httpResponse.STATUS_500.message,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                }
+                else {
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_400.status_code,
+                        message: 'Invalid Duplicate Username',
+                        error_message: httpResponse.STATUS_400.message,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                }
+            }
+            else {
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
+            }
+        }
+        catch (e) {
+            console.log(e)
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
+
+const updateMemberBackoffice = {
+    handler: async (request, reply) => {
+        try {
+            const payload = request.payload
+            const { value, error } = validateBackoffice.updateMemberValidate.validate(payload)
+            if (!error) {
+                const token = request.headers.authorization.replace("Bearer ", "")
+                const jwtDecode = await JWT.jwtDecode(token)
+                let idDecode = await cryptLib.decryptAES(jwtDecode.id)
+                const response = await prismaClient.user.update({
+                    where: {
+                        id: value.id,
+                        role: 'member'
+                    },
+                    data: {
+                        name: value.name,
+                        lastname: value.lastname,
+                        email: value.email,
+                        address: value.address,
+                        telephone: value.telephone,
+                        updated_by: Number(idDecode)
+                    }
+                })
+                if (!_.isEmpty(response)) {
+                    baseModel.IBaseNocontentModel = {
+                        status: true,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
+                        message: 'Updated successfully',
+                        error_message: '',
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+                else {
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_400.status_code,
+                        message: 'Updated failed',
+                        error_message: httpResponse.STATUS_400.message,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+            }
+            else {
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
+            }
+        }
+        catch (e) {
+            console.error(e);
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
+
+const deleteMemberBackoffice = {
+    handler: async (request, reply) => {
+        try {
+            const payload = request.payload
+            const { value, error } = validateBackoffice.deleteMemberValidate(payload)
+            if (!error) {
+                const response = await prismaClient.user.delete({
+                    where: {
+                        id: value.id
+                    }
+                })
+                if (!_.isEmpty(response)) {
+                    baseModel.IBaseNocontentModel = {
+                        status: true,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
+                        message: 'Delete successfully',
+                        error_message: '',
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+                else {
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_400.status_code,
+                        message: 'Delete failed',
+                        error_message: httpResponse.STATUS_400.message,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+            }
+            else {
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
+            }
+        }
+        catch (e) {
+            console.log(e);
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }  
+}
+
 const cryptTest = {
     auth: false,
     handler: async (request, reply) => {
@@ -707,6 +967,12 @@ module.exports = {
     getEventBackoffice,
     updateEventBackoffice,
     createOrganizerBackoffice,
+    updateOrganizerBackoffice,
+    deleteOrganizerBackoffice,
+    createMemberBackoffice,
+    updateMemberBackoffice,
+    deleteMemberBackoffice,
+
 
 
     //*************** emtyp ************** */
