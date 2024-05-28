@@ -56,34 +56,67 @@ const getAllMasterLocation = {
 
 //FIXME: Flow 
 const createRegisterEvent = {
-    handler : async (request , reply) => {
-        try{
+    handler: async (request, reply) => {
+        try {
             const payload = request.payload;
             const token = request.headers.authorization;
-            const {value , error} = validateEventMember.createRegisterEvent.validate(payload);
-            if(!error){
+            const { value, error } = validateEventMember.createRegisterEvent.validate(payload);
+            if (!error) {
                 const jwtDecode = await JWT.jwtDecode(token);
                 let idDecode = await cryptLib.decryptAES(jwtDecode.id);
-                const t = await prismaClient.$transaction([
-                    prismaClient.transaction.create({
-                        data : {
-                            status : '11',
-                            user_id : Number(idDecode),
-                            created_by : Number(idDecode),
+                const t = await prismaClient.$transaction(async (tx) => {
+                    const createTransaction = await tx.transaction.create({
+                        data: {
+                            status: '11',
+                            user_id: Number(idDecode),
+                            created_by: Number(idDecode),
                             type: 'JoinEvent',
-                            EventJoin : {
-                                create : {
-                                    description : value.description,
-                                    event_id : value.event_id,
-                                    created_by : Number(idDecode),
-                                    // RecordDataEvent : {
-
-                                    // }
+                            EventJoin: {
+                                create: {
+                                    description: value.description,
+                                    event_id: value.event_id,
+                                    created_by: Number(idDecode),
                                 }
                             },
                         }
-                    })
-                ])
+                    });
+                    const findEventJoin = await tx.eventJoin.findFirst({
+                        where: {
+                            trans_id: createTransaction.id
+                        },
+                    });
+                    //Finish job is stamp finish_time && sequence
+                    const createRecordDataEvent = await tx.recordDataEvent.create({
+                        data: {
+                            is_end: false,
+                            event_join_id: findEventJoin.id,
+                            event_id: findEventJoin.event_id,
+                        }
+                    });
+                    return !_.isEmpty(createRecordDataEvent) ? true : false
+                });
+                if (!_.isEmpty(t)) {
+                    baseModel.IBaseSingleResultModel = {
+                        status: true,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
+                        message: httpResponse.STATUS_CREATED.message,
+                        error_message: '',
+                        result: t[0].id
+                    }
+                    return reply.response(await baseResult.IBaseSingleResult(baseModel.IBaseSingleResultModel))
+                }
+                else {
+                    baseModel.IBaseSingleResultModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
+                        message: httpResponse.STATUS_500.message,
+                        error_message: '',
+                        result: ''
+                    }
+                    return reply.response(await baseResult.IBaseSingleResult(baseModel.IBaseSingleResultModel))
+                }
+
+
             }
             else {
                 return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
@@ -95,6 +128,7 @@ const createRegisterEvent = {
         }
     }
 }
+
 const createEvent = {
     handler: async (request, reply) => {
         try {
@@ -158,6 +192,18 @@ const createEvent = {
         catch (e) {
             console.log(e);
             return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
+
+//FIXME: Organizer approved
+const updateApprovedEvent = {
+    handler: async (request, reply) => {
+        try {
+
+        }
+        catch (e) {
+
         }
     }
 }
@@ -367,15 +413,15 @@ const updateMasterLocationBackoffice = {
                 const jwtDecode = await JWT.jwtDecode(token)
                 let idDecode = await cryptLib.decryptAES(jwtDecode.id)
                 const response = await prismaClient.masterLocation.update({
-                    where : {
-                        id : value.id
+                    where: {
+                        id: value.id
                     },
-                    data : {
-                        province : value.province,
-                        district : value.district,
-                        zipcode : value.zipcode,
-                        address : value.address,
-                        updated_by : Number(idDecode)
+                    data: {
+                        province: value.province,
+                        district: value.district,
+                        zipcode: value.zipcode,
+                        address: value.address,
+                        updated_by: Number(idDecode)
                     }
                 });
                 if (!_.isEmpty(response)) {
@@ -1067,11 +1113,11 @@ const deleteMemberBackoffice = {
 
 //FIXME: Event
 const createEventBackoffice = {
-    handler : async (request , reply) => {
-        try{
+    handler: async (request, reply) => {
+        try {
 
         }
-        catch(e){
+        catch (e) {
             console.log(e);
             return reply.response(Response.InternalServerError(e.message))
         }
@@ -1138,11 +1184,11 @@ const updateEventBackoffice = {
                     {
                         data: {
                             status: value.status,
-                            updated_by : Number(idDecode),
+                            updated_by: Number(idDecode),
                             Event: {
                                 update: {
                                     status_code: value.status,
-                                    updated_by : Number(idDecode)
+                                    updated_by: Number(idDecode)
                                 }
                             }
                         },
@@ -1241,6 +1287,7 @@ module.exports = {
     createAdminBackoffice,
     updateAdminBackoffice,
     deleteAdminBackoffice,
+    createRegisterEvent,
 
 
 

@@ -30,6 +30,12 @@ const routers = [
         path: '/api/get-all-event',
         config: Controller.getAllEvent
     },
+    //FIXME: Member join 
+    {
+        method: 'POST',
+        path: '/api/create-register-event',
+        config : Controller.createRegisterEvent
+    },
     //************************Back-office************************** */
     {
         method: 'GET',
@@ -64,9 +70,9 @@ const routers = [
     },
     //FIXME: Organizer
     {
-        method : 'GET',
-        path : '/api/get-all-organizer-backoffice',
-        config : Controller.getAllOrganizerBackoffice
+        method: 'GET',
+        path: '/api/get-all-organizer-backoffice',
+        config: Controller.getAllOrganizerBackoffice
     },
     {
         method: 'POST',
@@ -85,30 +91,30 @@ const routers = [
     },
     //FIXME: Member
     {
-        method : 'GET',
-        path : '/api/get-all-member-backoffice',
-        config : Controller.getAllMemberBackoffice
+        method: 'GET',
+        path: '/api/get-all-member-backoffice',
+        config: Controller.getAllMemberBackoffice
     },
     {
-        method : 'POST',
-        path : '/api/create-member-backoffice',
-        config : Controller.createMemberBackoffice
+        method: 'POST',
+        path: '/api/create-member-backoffice',
+        config: Controller.createMemberBackoffice
     },
     {
-        method : 'POST',
-        path : '/api/update-member-backoffice',
-        config : Controller.updateMemberBackoffice
+        method: 'POST',
+        path: '/api/update-member-backoffice',
+        config: Controller.updateMemberBackoffice
     },
     {
-        method : 'POST',
-        path : '/api/delete-member-backoffice',
-        config : Controller.deleteMemberBackoffice
+        method: 'POST',
+        path: '/api/delete-member-backoffice',
+        config: Controller.deleteMemberBackoffice
     },
     //FIXME: Master-location
     {
-        method : 'GET',
-        path : '/api/get-all-master-location-backoffice',
-        config : Controller.getAllMasterLocationBackoffice
+        method: 'GET',
+        path: '/api/get-all-master-location-backoffice',
+        config: Controller.getAllMasterLocationBackoffice
     },
     {
         method: 'POST',
@@ -116,14 +122,14 @@ const routers = [
         config: Controller.createMasterLocationBackoffice
     },
     {
-        method : 'POST',
-        path : '/api/update-master-location-backoffice',
-        config : Controller.updateMasterLocationBackoffice
+        method: 'POST',
+        path: '/api/update-master-location-backoffice',
+        config: Controller.updateMasterLocationBackoffice
     },
     {
-        method : 'POST',
-        path : '/api/delete-master-location-backoffice',
-        config : Controller.deleteMasterLocationBackoffice
+        method: 'POST',
+        path: '/api/delete-master-location-backoffice',
+        config: Controller.deleteMasterLocationBackoffice
     },
 
     // {
