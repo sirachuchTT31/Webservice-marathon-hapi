@@ -65,43 +65,58 @@ const createRegisterEvent = {
                 const jwtDecode = await JWT.jwtDecode(token);
                 let idDecode = await cryptLib.decryptAES(jwtDecode.id);
                 const t = await prismaClient.$transaction(async (tx) => {
-                    const createTransaction = await tx.transaction.create({
-                        data: {
-                            status: '11',
-                            user_id: Number(idDecode),
-                            created_by: Number(idDecode),
-                            type: 'JoinEvent',
-                            EventJoin: {
-                                create: {
-                                    description: value.description,
-                                    event_id: value.event_id,
-                                    created_by: Number(idDecode),
-                                }
-                            },
-                        }
-                    });
-                    const findEventJoin = await tx.eventJoin.findFirst({
+                    const findDuplicate = await tx.eventJoin.findFirst({
                         where: {
-                            trans_id: createTransaction.id
-                        },
-                    });
-                    //Finish job is stamp finish_time && sequence
-                    const createRecordDataEvent = await tx.recordDataEvent.create({
-                        data: {
-                            is_end: false,
-                            event_join_id: findEventJoin.id,
-                            event_id: findEventJoin.event_id,
+                            AND: [
+                                {
+                                    created_by: Number(idDecode)
+                                },
+                                {
+                                    event_id: value.event_id
+                                }
+                            ]
                         }
                     });
-                    return !_.isEmpty(createRecordDataEvent) ? true : false
+                    if (_.isEmpty(findDuplicate)) {
+                        const createTransaction = await tx.transaction.create({
+                            data: {
+                                status: '11',
+                                user_id: Number(idDecode),
+                                created_by: Number(idDecode),
+                                type: 'JoinEvent',
+                                EventJoin: {
+                                    create: {
+                                        description: value.description,
+                                        event_id: value.event_id,
+                                        created_by: Number(idDecode),
+                                    }
+                                },
+                            }
+                        });
+                        const findEventJoin = await tx.eventJoin.findFirst({
+                            where: {
+                                trans_id: createTransaction.id
+                            },
+                        });
+                        //Finish job is stamp finish_time && sequence
+                        const createRecordDataEvent = await tx.recordDataEvent.create({
+                            data: {
+                                is_end: false,
+                                event_join_id: findEventJoin.id,
+                                event_id: findEventJoin.event_id,
+                            }
+                        });
+                        return findEventJoin ? true : false
+                    }
+                    return false
                 });
-                if (!_.isEmpty(t)) {
+                if (t === true) {
                     baseModel.IBaseSingleResultModel = {
                         status: true,
                         status_code: httpResponse.STATUS_CREATED.status_code,
-                        message: httpResponse.STATUS_CREATED.message,
+                        message: 'ลงทะเบียนสำเร็จ',
                         error_message: '',
-                        result: t[0].id
+                        result: t
                     }
                     return reply.response(await baseResult.IBaseSingleResult(baseModel.IBaseSingleResultModel))
                 }
@@ -109,9 +124,9 @@ const createRegisterEvent = {
                     baseModel.IBaseSingleResultModel = {
                         status: false,
                         status_code: httpResponse.STATUS_CREATED.status_code,
-                        message: httpResponse.STATUS_500.message,
+                        message: 'ลงทะเบียนไม่สำเร็จ',
                         error_message: '',
-                        result: ''
+                        result: t
                     }
                     return reply.response(await baseResult.IBaseSingleResult(baseModel.IBaseSingleResultModel))
                 }
@@ -120,6 +135,71 @@ const createRegisterEvent = {
             }
             else {
                 return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
+            }
+        }
+        catch (e) {
+            console.log(e);
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
+
+const getAllHistory = {
+    handler: async (request, reply) => {
+        try {
+            const token = request.headers.authorization.replace("Bearer ", "")
+            const jwtDecode = await JWT.jwtDecode(token)
+            let idDecode = await cryptLib.decryptAES(jwtDecode.id)
+            const params = request.query
+            //Logic pagination 
+            let skipData = Number(params.page) * Number(params.per_page);
+            let takeData = params.per_page;
+            let results = {}
+            const t = await prismaClient.$transaction(async (tx) => {
+                const findPagination = await tx.eventJoin.findMany({
+                    where: {
+                        created_by: Number(idDecode)
+                    },
+                    skip: Number(skipData),
+                    take: Number(takeData),
+                    orderBy : {
+                        created_by : 'desc'
+                    }
+                });
+                const countAll = await tx.eventJoin.count({
+                    where: {
+                        created_by: Number(idDecode)
+                    },
+                });
+                results = {
+                    data : findPagination,
+                    totalRecord : countAll,
+                }
+                return !_.isEmpty(findPagination) ? results : null;
+            })
+            if (!_.isEmpty(t)) {
+                baseModel.IBaseCollectionResultsPaginationModel = {
+                    status: true,
+                    status_code: httpResponse.STATUS_200.status_code,
+                    message: httpResponse.STATUS_200.message,
+                    results: results.data,
+                    total_record : results.totalRecord,
+                    page : params.page,
+                    per_page : params.per_page
+                }
+                return reply.response(await baseResult.IBaseCollectionResultsPagination(baseModel.IBaseCollectionResultsPaginationModel))
+            }
+            else {
+                baseModel.IBaseCollectionResultsPaginationModel = {
+                    status: true,
+                    status_code: httpResponse.STATUS_201_NOCONENT.status_code,
+                    message: httpResponse.STATUS_201_NOCONENT.message,
+                    results: '',
+                    total_record : 0,
+                    page : 0,
+                    per_page : 0
+                }
+                return reply.response(await baseResult.IBaseCollectionResultsPagination(baseModel.IBaseCollectionResultsPaginationModel))
             }
         }
         catch (e) {
@@ -304,9 +384,9 @@ const getAllEvent = {
             }
             else {
                 baseModel.IBaseCollectionResultsModel = {
-                    status: false,
-                    status_code: httpResponse.STATUS_500.message,
-                    message: httpResponse.STATUS_500.message,
+                    status: true,
+                    status_code: httpResponse.STATUS_201_NOCONENT.status_code,
+                    message: httpResponse.STATUS_201_NOCONENT.message,
                     results: []
                 }
                 return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
@@ -1202,7 +1282,7 @@ const updateEventBackoffice = {
                 if (!_.isEmpty(updateEvent)) {
                     baseModel.IBaseNocontentModel = {
                         status: true,
-                        message: httpResponse.STATUS_201_NOCONENT.message,
+                        message: 'Update success',
                         status_code: httpResponse.STATUS_200.status_code,
                     }
                     return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
@@ -1288,6 +1368,7 @@ module.exports = {
     updateAdminBackoffice,
     deleteAdminBackoffice,
     createRegisterEvent,
+    getAllHistory,
 
 
 

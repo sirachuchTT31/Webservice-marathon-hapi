@@ -36,6 +36,11 @@ const routers = [
         path: '/api/create-register-event',
         config : Controller.createRegisterEvent
     },
+    {
+        method : 'GET',
+        path : '/api/get-all-history',
+        config : Controller.getAllHistory
+    },
     //************************Back-office************************** */
     {
         method: 'GET',
