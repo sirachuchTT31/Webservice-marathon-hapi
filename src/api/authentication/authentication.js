@@ -90,10 +90,11 @@ const refreshToken = {
         try {
             const refreshToken = request.payload.refreshToken
             const responseRefreshToken = await jwtVerifyRefreshToken(refreshToken);
+            let decodeUsername = await cryptLib.decryptAES(responseRefreshToken?.result?.username)
             if (responseRefreshToken.isValid != false) {
                 const findAuthen = await prismaClient.user.findFirst({
                     where: {
-                        username: responseRefreshToken?.payload?.username
+                        username: decodeUsername
                     }
                 });
                 if (!_.isEmpty(findAuthen)) {
