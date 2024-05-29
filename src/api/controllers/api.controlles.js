@@ -162,8 +162,8 @@ const getAllHistory = {
                     },
                     skip: Number(skipData),
                     take: Number(takeData),
-                    orderBy : {
-                        created_by : 'desc'
+                    orderBy: {
+                        created_by: 'desc'
                     }
                 });
                 const countAll = await tx.eventJoin.count({
@@ -172,8 +172,8 @@ const getAllHistory = {
                     },
                 });
                 results = {
-                    data : findPagination,
-                    totalRecord : countAll,
+                    data: findPagination,
+                    totalRecord: countAll,
                 }
                 return !_.isEmpty(findPagination) ? results : null;
             })
@@ -183,9 +183,9 @@ const getAllHistory = {
                     status_code: httpResponse.STATUS_200.status_code,
                     message: httpResponse.STATUS_200.message,
                     results: results.data,
-                    total_record : results.totalRecord,
-                    page : params.page,
-                    per_page : params.per_page
+                    total_record: results.totalRecord,
+                    page: params.page,
+                    per_page: params.per_page
                 }
                 return reply.response(await baseResult.IBaseCollectionResultsPagination(baseModel.IBaseCollectionResultsPaginationModel))
             }
@@ -194,10 +194,10 @@ const getAllHistory = {
                     status: true,
                     status_code: httpResponse.STATUS_201_NOCONENT.status_code,
                     message: httpResponse.STATUS_201_NOCONENT.message,
-                    results: '',
-                    total_record : 0,
-                    page : 0,
-                    per_page : 0
+                    results: null,
+                    total_record: 0,
+                    page: 0,
+                    per_page: 0
                 }
                 return reply.response(await baseResult.IBaseCollectionResultsPagination(baseModel.IBaseCollectionResultsPaginationModel))
             }
@@ -277,13 +277,101 @@ const createEvent = {
 }
 
 //FIXME: Organizer approved
-const updateApprovedEvent = {
+const getAllEventRegister = {
     handler: async (request, reply) => {
         try {
-
+            const token = request.headers.authorization.replace("Bearer ", "")
+            const jwtDecode = await JWT.jwtDecode(token);
+            let idDecode = await cryptLib.decryptAES(jwtDecode.id);
+            const params = request.query;
+            //Logic pagination 
+            let skipData = Number(params.page) * Number(params.per_page);
+            let takeData = params.per_page;
+            let results = {}
+            const t = await prismaClient.$transaction(async (tx) => {
+                const findPagination = await prismaClient.eventJoin.findMany({
+                    where: {
+                        AND: [
+                            {
+                                event_id: params.event_id
+                            },
+                            {
+                                Event: {
+                                    created_by: Number(idDecode)
+                                }
+                            }
+                        ]
+                    },
+                    skip: skipData,
+                    take: takeData,
+                    orderBy: {
+                        created_by: 'desc'
+                    }
+                });
+                const countAll = await prismaClient.eventJoin.count({
+                    where: {
+                        AND: [
+                            {
+                                event_id: params.event_id
+                            },
+                            {
+                                Event: {
+                                    created_by: Number(idDecode)
+                                }
+                            }
+                        ]
+                    },
+                });
+                results = {
+                    data: findPagination,
+                    totalRecord: countAll,
+                }
+                return !_.isEmpty(findPagination) ? results : null;
+            })
+            if (!_.isEmpty(t)) {
+                baseModel.IBaseCollectionResultsPaginationModel = {
+                    status: true,
+                    status_code: httpResponse.STATUS_200.status_code,
+                    message: httpResponse.STATUS_200.message,
+                    results: results.data,
+                    total_record: results.totalRecord,
+                    page: params.page,
+                    per_page: params.per_page
+                }
+                return reply.response(await baseResult.IBaseCollectionResultsPagination(baseModel.IBaseCollectionResultsPaginationModel))
+            }
+            else {
+                baseModel.IBaseCollectionResultsPaginationModel = {
+                    status: true,
+                    status_code: httpResponse.STATUS_201_NOCONENT.status_code,
+                    message: httpResponse.STATUS_201_NOCONENT.message,
+                    results: null,
+                    total_record: 0,
+                    page: 0,
+                    per_page: 0
+                }
+                return reply.response(await baseResult.IBaseCollectionResultsPagination(baseModel.IBaseCollectionResultsPaginationModel))
+            }
         }
         catch (e) {
 
+        }
+    }
+}
+
+const updateApprovedEventRegister = {
+    handler: async (request, reply) => {
+        try {
+            const payload = request.payload;
+            const token = request.headers.authorization
+            const { value, error } = validateEvent.updateApprovedEventRegister.validate(payload);
+            if(!error){
+
+            }
+        }
+        catch (e) {
+            console.log(e);
+            return reply.response(Response.InternalServerError(e.message))
         }
     }
 }
@@ -1344,6 +1432,7 @@ module.exports = {
     createEvent,
     getAllEvent,
     uploadImageEvent,
+    getAllEventRegister,
 
     //Test
     cryptTest,
