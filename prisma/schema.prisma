@@ -25,7 +25,7 @@ model User {
   updated_at             DateTime             @default(now()) @updatedAt @db.Timestamp(3)
   updated_by             Int?
   ApprovedAccount        ApprovedAccount[]
-  Transaction            Transaction[]
+  Event                  Event[]
   TransactionPayment     TransactionPayment[]
   UserOnEventJoin        UserOnEventJoin[]
   LoginLog               LoginLog[]
@@ -76,22 +76,22 @@ model Event {
   status_code     String            @db.VarChar(2)
   path_image      String            @db.VarChar(255)
   location_id     Int
-  trans_id        Int               @unique
   is_active       Boolean?
   created_at      DateTime          @default(now()) @db.Timestamp(3)
   created_by      Int?
   updated_at      DateTime          @default(now()) @updatedAt @db.Timestamp(3)
   updated_by      Int?
   MasterLocation  MasterLocation    @relation(fields: [location_id], references: [id])
-  Transaction     Transaction       @relation(fields: [trans_id], references: [id])
+  Transaction     Transaction[]
   EventJoin       EventJoin[]
   ApprovedEvent   ApprovedEvent[]
   Invoice         Invoice[]
   Payment         Payment[]
   RecordDataEvent RecordDataEvent[]
+  User            User?             @relation(fields: [user_id], references: [id])
+  user_id          Int?
 
   @@index([location_id])
-  @@index([trans_id])
   @@map("event")
 }
 
@@ -114,19 +114,18 @@ model EventJoin {
   id                Int                 @id @default(autoincrement())
   description       String?             @db.VarChar(255)
   event_id          Int?
-  trans_id          Int                 @unique
   created_at        DateTime            @default(now()) @db.Timestamp(3)
   created_by        Int?
   updated_at        DateTime            @default(now()) @updatedAt @db.Timestamp(3)
   updated_by        Int?
   Event             Event?              @relation(fields: [event_id], references: [id])
-  Transaction       Transaction         @relation(fields: [trans_id], references: [id])
+  Transaction       Transaction[]
   ApprovedEventJoin ApprovedEventJoin[]
   UserOnEventJoin   UserOnEventJoin[]
   RecordDataEvent   RecordDataEvent[]
 
   @@index([event_id])
-  @@index([trans_id])
+  // @@index([trans_id])
   @@map("event_join")
 }
 
@@ -181,19 +180,18 @@ model ApprovedEventJoin {
 }
 
 model Transaction {
-  id         Int        @id @default(autoincrement())
-  status     String     @db.VarChar(100)
-  type       String     @db.VarChar(50)
-  user_id    Int
-  created_at DateTime   @default(now()) @db.Timestamp(3)
-  created_by Int?
-  updated_at DateTime   @default(now()) @updatedAt @db.Timestamp(3)
-  updated_by Int?
-  Event      Event?
-  EventJoin  EventJoin?
-  user       User       @relation(fields: [user_id], references: [id])
+  id            Int        @id @default(autoincrement())
+  status        String     @db.VarChar(100)
+  type          String     @db.VarChar(50)
+  event_join_id Int?
+  event_id      Int?
+  created_at    DateTime   @default(now()) @db.Timestamp(3)
+  created_by    Int?
+  updated_at    DateTime   @default(now()) @updatedAt @db.Timestamp(3)
+  updated_by    Int?
+  Event         Event?     @relation(fields: [event_id], references: [id])
+  EventJoin     EventJoin? @relation(fields: [event_join_id], references: [id])
 
-  @@index([user_id])
   @@map("transaction")
 }
 

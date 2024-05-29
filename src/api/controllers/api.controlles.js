@@ -78,35 +78,42 @@ const createRegisterEvent = {
                         }
                     });
                     if (_.isEmpty(findDuplicate)) {
-                        const createTransaction = await tx.transaction.create({
+                        const createEventJoin = await tx.eventJoin.create({
                             data: {
-                                status: '11',
-                                user_id: Number(idDecode),
+                                description: value.description,
+                                event_id: value.event_id,
                                 created_by: Number(idDecode),
-                                type: 'JoinEvent',
-                                EventJoin: {
+                                Transaction: {
                                     create: {
-                                        description: value.description,
-                                        event_id: value.event_id,
+                                        status: '11',
                                         created_by: Number(idDecode),
+                                        type: 'JoinEvent',
                                     }
                                 },
+                            },
+                            select: {
+                                id: true,
+                                event_id: true
+                            },
+                        })
+                        const createUserOnEventJoin = await tx.userOnEventJoin.create({
+                            data: {
+                                user_id: Number(idDecode),
+                                created_by: Number(idDecode),
+                                event_join_id: createEventJoin.id,
+                                status_code: '11'
                             }
                         });
-                        const findEventJoin = await tx.eventJoin.findFirst({
-                            where: {
-                                trans_id: createTransaction.id
-                            },
-                        });
-                        //Finish job is stamp finish_time && sequence
                         const createRecordDataEvent = await tx.recordDataEvent.create({
                             data: {
                                 is_end: false,
-                                event_join_id: findEventJoin.id,
-                                event_id: findEventJoin.event_id,
+                                event_join_id: createEventJoin.id,
+                                event_id: createEventJoin.event_id,
                             }
                         });
-                        return findEventJoin ? true : false
+                        //Finish job is stamp finish_time && sequence
+
+                        return createEventJoin.id ? true : false
                     }
                     return false
                 });
@@ -156,21 +163,39 @@ const getAllHistory = {
             let takeData = params.per_page;
             let results = {}
             const t = await prismaClient.$transaction(async (tx) => {
-                const findPagination = await tx.eventJoin.findMany({
-                    where: {
-                        created_by: Number(idDecode)
-                    },
-                    skip: Number(skipData),
-                    take: Number(takeData),
-                    orderBy: {
-                        created_by: 'desc'
+                const findPagination = await tx.userOnEventJoin.findMany(
+                    {
+                        where: {
+                            user_id: Number(idDecode)
+                        },
+                        include: {
+                            EventJoin: {
+                                select: {
+                                    id: true,
+                                    description: true,
+                                    Event: {
+                                        select: {
+                                            id: true,
+                                            name: true,
+                                            path_image: true,
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        skip: Number(skipData),
+                        take: Number(takeData),
+                        orderBy: {
+                            created_at: 'desc'
+                        }
                     }
-                });
-                const countAll = await tx.eventJoin.count({
+                )
+                const countAll = await tx.userOnEventJoin.count({
                     where: {
-                        created_by: Number(idDecode)
+                        user_id: Number(idDecode)
                     },
                 });
+                console.log(findPagination)
                 results = {
                     data: findPagination,
                     totalRecord: countAll,
@@ -219,38 +244,41 @@ const createEvent = {
                 const jwtPayload = await JWT.jwtDecode(token)
                 const createdId = await cryptLib.decryptAES(jwtPayload.id)
                 const userId = await cryptLib.decryptAES(value.auth_id)
-                const t = await prismaClient.$transaction([
-                    prismaClient.transaction.create({
+                const t = await prismaClient.$transaction(async (tx) => {
+                    const response = await tx.event.create({
                         data: {
-                            status: '01',
-                            user_id: Number(userId),
+                            name: value.name,
+                            price: Number(parseFloat(value.price).toFixed(2)),
+                            max_amount: Number(value.max_amount),
+                            detail: value.detail,
+                            distance: value.distance,
+                            due_date: new Date(value.due_date),
+                            path_image: '',
+                            status_code: '01',
+                            location_id: Number(value.location_id),
                             created_by: Number(createdId),
-                            type: 'Event',
-                            Event: {
+                            user_id: Number(createdId),
+                            Transaction: {
                                 create: {
-                                    name: value.name,
-                                    price: Number(parseFloat(value.price).toFixed(2)),
-                                    max_amount: Number(value.max_amount),
-                                    detail: value.detail,
-                                    distance: value.distance,
-                                    due_date: new Date(value.due_date),
-                                    path_image: '',
-                                    status_code: '01',
-                                    location_id: Number(value.location_id),
+                                    status: '01',
+                                    type: 'Event',
                                     created_by: Number(createdId)
                                 }
                             }
+                        },
+                        select: {
+                            id: true
                         }
                     })
-                ]);
-                console.log('t', t)
-                if (!_.isEmpty(t)) {
+                    return response.id ? response.id : null
+                })
+                if (t) {
                     baseModel.IBaseSingleResultModel = {
                         status: true,
                         status_code: httpResponse.STATUS_CREATED.status_code,
                         message: httpResponse.STATUS_CREATED.message,
                         error_message: '',
-                        result: t[0].id
+                        result: t
                     }
                     return reply.response(await baseResult.IBaseSingleResult(baseModel.IBaseSingleResultModel))
                 }
@@ -365,7 +393,7 @@ const updateApprovedEventRegister = {
             const payload = request.payload;
             const token = request.headers.authorization
             const { value, error } = validateEvent.updateApprovedEventRegister.validate(payload);
-            if(!error){
+            if (!error) {
 
             }
         }
@@ -385,7 +413,6 @@ const uploadImageEvent = {
     handler: async (request, reply) => {
         try {
             const payload = request.payload;
-            console.log(payload.id)
             const id = await cryptLib.decryptAES(payload.id)
             const t = await prismaClient.$transaction(async (tx) => {
                 const pathImage = await Handler.HandleruploadImageEvent(payload)
@@ -394,7 +421,7 @@ const uploadImageEvent = {
                 }
                 const updateEvent = await tx.event.update({
                     where: {
-                        trans_id: Number(id)
+                        id: Number(id)
                     },
                     data: {
                         path_image: pathImage
@@ -402,13 +429,12 @@ const uploadImageEvent = {
                 });
                 return updateEvent ? updateEvent : ''
             });
-            console.log(t)
             if (!_.isEmpty(t)) {
                 baseModel.IBaseNocontentModel = {
                     status: true,
                     status_code: httpResponse.STATUS_200.status_code,
                     error_message: '',
-                    message: 'Updated successfully'
+                    message: 'Create successfully'
                 }
                 return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
             }
@@ -1348,26 +1374,30 @@ const updateEventBackoffice = {
             if (!error) {
                 const jwtDecode = await JWT.jwtDecode(token)
                 let idDecode = await cryptLib.decryptAES(jwtDecode.id)
-                const updateEvent = await prismaClient.transaction.update(
-                    {
+                const t = await prismaClient.$transaction(async (tx) => {
+                    await tx.event.update({
+                        where: {
+                            id: Number(value.event_id)
+                        },
+                        data: {
+                            status_code: value.status,
+                            updated_by: Number(idDecode),
+                        }
+                    })
+                    const createTransaction = await tx.transaction.create({
                         data: {
                             status: value.status,
-                            updated_by: Number(idDecode),
-                            Event: {
-                                update: {
-                                    status_code: value.status,
-                                    updated_by: Number(idDecode)
-                                }
-                            }
+                            type: 'Event_Approved',
+                            created_by: Number(idDecode),
+                            event_id: Number(value.event_id)
                         },
-                        where: {
-                            id: Number(value.transaction_id)
-                        },
-                        include: {
-                            Event: true
+                        select: {
+                            id: true
                         }
-                    });
-                if (!_.isEmpty(updateEvent)) {
+                    })
+                    return createTransaction.id ? true : false
+                });
+                if (t === true) {
                     baseModel.IBaseNocontentModel = {
                         status: true,
                         message: 'Update success',
