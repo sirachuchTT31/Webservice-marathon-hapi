@@ -195,7 +195,6 @@ const getAllHistory = {
                         user_id: Number(idDecode)
                     },
                 });
-                console.log(findPagination)
                 results = {
                     data: findPagination,
                     totalRecord: countAll,
@@ -317,37 +316,23 @@ const getAllEventRegister = {
             let takeData = params.per_page;
             let results = {}
             const t = await prismaClient.$transaction(async (tx) => {
-                const findPagination = await prismaClient.eventJoin.findMany({
+                const findPagination = await prismaClient.event.findMany({
                     where: {
-                        AND: [
-                            {
-                                event_id: params.event_id
-                            },
-                            {
-                                Event: {
-                                    created_by: Number(idDecode)
-                                }
-                            }
-                        ]
+                        User: {
+                            id: Number(idDecode)
+                        }
                     },
-                    skip: skipData,
-                    take: takeData,
+                    skip: Number(skipData),
+                    take: Number(takeData),
                     orderBy: {
                         created_by: 'desc'
                     }
                 });
-                const countAll = await prismaClient.eventJoin.count({
+                const countAll = await prismaClient.event.count({
                     where: {
-                        AND: [
-                            {
-                                event_id: params.event_id
-                            },
-                            {
-                                Event: {
-                                    created_by: Number(idDecode)
-                                }
-                            }
-                        ]
+                        User: {
+                            id: Number(idDecode)
+                        }
                     },
                 });
                 results = {
@@ -382,7 +367,8 @@ const getAllEventRegister = {
             }
         }
         catch (e) {
-
+            console.log(e);
+            return reply.response(Response.InternalServerError(e.message))
         }
     }
 }

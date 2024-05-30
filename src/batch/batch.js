@@ -26,7 +26,7 @@ const taskUpdateEvent = () => {
                             }
                         ]
                     },
-                })
+                });
                 if (!_.isEmpty(findWhereDuedate)) {
                     for (const item of findWhereDuedate) {
                         await tx.event.update({
@@ -35,16 +35,37 @@ const taskUpdateEvent = () => {
                             },
                             data: {
                                 status_code: '04',
-                                Transaction: {
-                                    update: {
-                                        status: '04'
-                                    }
-                                }
                             },
-                            include: {
-                                Transaction: true
-                            }
                         });
+                    }
+                }
+                //Job success 02 status to finish 05
+                const findWhereSuccessJob = await tx.event.findMany({
+                    where: {
+                        AND: [
+                            {
+                                due_date: {
+                                    lt: currentDate
+                                },
+                            },
+                            {
+                                status_code: {
+                                    equals: '02'
+                                }
+                            }
+                        ]
+                    }
+                });
+                if (!_.isEmpty(findWhereSuccessJob)) {
+                    for (const item of findWhereSuccessJob) {
+                        await tx.event.update({
+                            where: {
+                                id: item.id
+                            },
+                            data: {
+                                status_code: '05'
+                            }
+                        })
                     }
                 }
                 return _.isEmpty(findWhereDuedate) ? false : true

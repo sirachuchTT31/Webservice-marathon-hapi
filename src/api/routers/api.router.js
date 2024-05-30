@@ -26,6 +26,11 @@ const routers = [
         // ...Controller.uploadImageEvent
     },
     {
+        method : 'GET',
+        path : '/api/get-all-event-register',
+        config : Controller.getAllEventRegister
+    },
+    {
         method: 'GET',
         path: '/api/get-all-event',
         config: Controller.getAllEvent
