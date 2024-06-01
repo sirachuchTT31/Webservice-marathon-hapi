@@ -349,7 +349,7 @@ const getAllEventRegister = {
                     skip: Number(skipData),
                     take: Number(takeData),
                     orderBy: {
-                        created_by: 'desc'
+                        due_date: 'desc'
                     }
                 });
                 const countAll = await prismaClient.event.count({
@@ -404,37 +404,39 @@ const updateEvent = {
             const token = request.headers.authorization;
             const jwtDecode = await JWT.jwtDecode(token)
             let idDecode = await cryptLib.decryptAES(jwtDecode.id)
-            const { value, error } = validateEvent.updateEventValidate(payload);
+            const { value, error } = validateEvent.updateEventValidate.validate(payload);
             if (!error) {
                 const t = await prismaClient.$transaction(async (tx) => {
-                    const updateEvent = await prismaClient.event.update(
-                        {
-                            where: {
-                                id: Number(value.id)
-                            },
+                    for(const item of value){
+                        const updateEvent = await tx.event.update(
+                            {
+                                where: {
+                                    id: Number(item.id)
+                                },
+                                data: {
+                                    is_active: item.is_active,
+                                    status_code: item.status_code,
+                                    updated_by: Number(idDecode)
+                                },
+                                select: {
+                                    id: true,
+                                    status_code: true
+                                }
+                            });
+                        const createTransaction = await tx.transaction.create({
                             data: {
-                                is_active: value.is_active,
-                                status_code: value.status_code,
-                                updated_by: Number(idDecode)
+                                type: 'Event',
+                                detail: 'Update event by organizer',
+                                status: updateEvent.status_code,
+                                event_id: updateEvent.id,
+                                created_by: Number(idDecode)
                             },
                             select: {
-                                id: true,
-                                status_code: true
+                                id: true
                             }
                         });
-                    const createTransaction = await prismaClient.transaction.create({
-                        data: {
-                            type: 'Event',
-                            detail: 'Update event by organizer',
-                            status: updateEvent.status_code,
-                            event_id: updateEvent.id,
-                            created_by: Number(idDecode)
-                        },
-                        select: {
-                            id: true
-                        }
-                    });
-                    return createTransaction.id ? true : false
+                        return createTransaction.id ? true : false
+                    }
                 });
 
                 if (t === true) {
@@ -562,6 +564,9 @@ const getAllEvent = {
                                 district: true
                             }
                         }
+                    },
+                    orderBy : {
+                        created_at : "desc"
                     }
                 });
 
