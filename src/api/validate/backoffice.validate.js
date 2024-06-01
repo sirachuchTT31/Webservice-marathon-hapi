@@ -1,5 +1,11 @@
 const Joi = require('joi')
 
+const updateEventValidate = Joi.object().keys({
+    event_id : Joi.number().required(),
+    status : Joi.string().required()
+});
+
+
 const createOrganizerValidate = Joi.object().keys({
     username: Joi.string().required(),
     password: Joi.string().required(),
@@ -60,6 +66,7 @@ const deleteMasterLocationValidate = Joi.object().keys({
 });
 
 module.exports = {
+    updateEventValidate,
     createOrganizerValidate,
     updateOrganizerValidate,
     deleteOrganizerValidate,
@@ -68,5 +75,5 @@ module.exports = {
     deleteMemberValidate,
     //Master Location 
     updateMasterLocationValidate,
-    deleteMasterLocationValidate
+    deleteMasterLocationValidate,
 }

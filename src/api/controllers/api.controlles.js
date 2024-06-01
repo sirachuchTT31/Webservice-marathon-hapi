@@ -81,7 +81,7 @@ const createRegisterEvent = {
                         const createEventJoin = await tx.eventJoin.create({
                             data: {
                                 description: value.description,
-                                event_id: value.event_id,
+                                event_id: Number(value.event_id),
                                 created_by: Number(idDecode),
                                 Transaction: {
                                     create: {
@@ -96,7 +96,31 @@ const createRegisterEvent = {
                                 event_id: true
                             },
                         })
-                        const createUserOnEventJoin = await tx.userOnEventJoin.create({
+                        //remove max_amount 
+                        const findMaxAmount = await tx.event.findFirst({
+                            where: {
+                                id: Number(value.event_id)
+                            },
+                            select: {
+                                max_amount: true
+                            }
+                        })
+                        //condition max-amount === 0 finish transaction
+                        if (findMaxAmount.max_amount == 0) {
+                            throw new error('Maximun amount non exited')
+                        }
+                        let summaryMaxAmount = Number(findMaxAmount.max_amount) - 1
+                        await tx.event.update(
+                            {
+                                where: {
+                                    id: Number(value.event_id)
+                                },
+                                data: {
+                                    max_amount: summaryMaxAmount
+                                }
+                            }
+                        );
+                        await tx.userOnEventJoin.create({
                             data: {
                                 user_id: Number(idDecode),
                                 created_by: Number(idDecode),
@@ -104,7 +128,7 @@ const createRegisterEvent = {
                                 status_code: '11'
                             }
                         });
-                        const createRecordDataEvent = await tx.recordDataEvent.create({
+                        await tx.recordDataEvent.create({
                             data: {
                                 is_end: false,
                                 event_join_id: createEventJoin.id,
@@ -364,6 +388,76 @@ const getAllEventRegister = {
                     per_page: 0
                 }
                 return reply.response(await baseResult.IBaseCollectionResultsPagination(baseModel.IBaseCollectionResultsPaginationModel))
+            }
+        }
+        catch (e) {
+            console.log(e);
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
+
+const updateEvent = {
+    handler: async (request, reply) => {
+        try {
+            const payload = request.payload;
+            const token = request.headers.authorization;
+            const jwtDecode = await JWT.jwtDecode(token)
+            let idDecode = await cryptLib.decryptAES(jwtDecode.id)
+            const { value, error } = validateEvent.updateEventValidate(payload);
+            if (!error) {
+                const t = await prismaClient.$transaction(async (tx) => {
+                    const updateEvent = await prismaClient.event.update(
+                        {
+                            where: {
+                                id: Number(value.id)
+                            },
+                            data: {
+                                is_active: value.is_active,
+                                status_code: value.status_code,
+                                updated_by: Number(idDecode)
+                            },
+                            select: {
+                                id: true,
+                                status_code: true
+                            }
+                        });
+                    const createTransaction = await prismaClient.transaction.create({
+                        data: {
+                            type: 'Event',
+                            detail: 'Update event by organizer',
+                            status: updateEvent.status_code,
+                            event_id: updateEvent.id,
+                            created_by: Number(idDecode)
+                        },
+                        select: {
+                            id: true
+                        }
+                    });
+                    return createTransaction.id ? true : false
+                });
+
+                if (t === true) {
+                    baseModel.IBaseNocontentModel = {
+                        status: true,
+                        status_code: httpResponse.STATUS_200.status_code,
+                        error_message: '',
+                        message: 'Update successfully'
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                }
+                else {
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
+                        message: 'Update failed',
+                        error_message: httpResponse.STATUS_CREATED.message,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+            }
+            else {
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
             }
         }
         catch (e) {
@@ -1356,7 +1450,7 @@ const updateEventBackoffice = {
         try {
             const payload = request.payload
             const token = request.headers.authorization
-            const { value, error } = validateEvent.updateEventValidate.validate(payload);
+            const { value, error } = validateBackoffice.updateEventValidate.validate(payload);
             if (!error) {
                 const jwtDecode = await JWT.jwtDecode(token)
                 let idDecode = await cryptLib.decryptAES(jwtDecode.id)
@@ -1446,6 +1540,7 @@ module.exports = {
 
     //Event 
     createEvent,
+    updateEvent,
     getAllEvent,
     uploadImageEvent,
     getAllEventRegister,

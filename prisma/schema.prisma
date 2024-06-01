@@ -76,7 +76,7 @@ model Event {
   status_code     String            @db.VarChar(2)
   path_image      String            @db.VarChar(255)
   location_id     Int
-  is_active       Boolean?
+  is_active       Boolean?          @default(false)
   created_at      DateTime          @default(now()) @db.Timestamp(3)
   created_by      Int?
   updated_at      DateTime          @default(now()) @updatedAt @db.Timestamp(3)
@@ -89,7 +89,7 @@ model Event {
   Payment         Payment[]
   RecordDataEvent RecordDataEvent[]
   User            User?             @relation(fields: [user_id], references: [id])
-  user_id          Int?
+  user_id         Int?
 
   @@index([location_id])
   @@map("event")
@@ -183,6 +183,7 @@ model Transaction {
   id            Int        @id @default(autoincrement())
   status        String     @db.VarChar(100)
   type          String     @db.VarChar(50)
+  detail        String?    @db.VarChar(100)
   event_join_id Int?
   event_id      Int?
   created_at    DateTime   @default(now()) @db.Timestamp(3)
@@ -201,7 +202,7 @@ model Invoice {
   user_id      Int?
   event_id     Int?
   count_print  Int?
-  is_active    Boolean
+  is_active    Boolean  @default(false)
   Event        Event?   @relation(fields: [event_id], references: [id])
   User         User?    @relation(fields: [user_id], references: [id])
   created_at   DateTime @default(now()) @db.Timestamp(3)

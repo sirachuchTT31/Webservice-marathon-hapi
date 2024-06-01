@@ -13,9 +13,11 @@ const createEventValidate = Joi.object().keys({
 })
 
 const updateEventValidate = Joi.object().keys({
-    event_id : Joi.number().required(),
-    status : Joi.string().required()
-});
+    id : Joi.number().required(),
+    status_code : Joi.string().required(),
+    is_active : Joi.boolean().required()
+})
+
 
 const updateApprovedEventRegister = Joi.object().keys({
     event_join_id : Joi.number().required(),

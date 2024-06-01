@@ -26,25 +26,30 @@ const routers = [
         // ...Controller.uploadImageEvent
     },
     {
-        method : 'GET',
-        path : '/api/get-all-event-register',
-        config : Controller.getAllEventRegister
+        method: 'GET',
+        path: '/api/get-all-event-register',
+        config: Controller.getAllEventRegister
     },
     {
         method: 'GET',
         path: '/api/get-all-event',
         config: Controller.getAllEvent
     },
+    {
+        method: 'POST',
+        path: '/api/update-event',
+        config: Controller.updateEvent
+    },
     //FIXME: Member join 
     {
         method: 'POST',
         path: '/api/create-register-event',
-        config : Controller.createRegisterEvent
+        config: Controller.createRegisterEvent
     },
     {
-        method : 'GET',
-        path : '/api/get-all-history',
-        config : Controller.getAllHistory
+        method: 'GET',
+        path: '/api/get-all-history',
+        config: Controller.getAllHistory
     },
     //************************Back-office************************** */
     {
