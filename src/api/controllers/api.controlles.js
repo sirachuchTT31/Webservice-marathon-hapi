@@ -328,6 +328,107 @@ const createEvent = {
 }
 
 //FIXME: Organizer approved
+const getEventRegisterUserJoin = {
+    handler: async (request, reply) => {
+        try {
+            const token = request.headers.authorization.replace("Bearer ", "")
+            const jwtDecode = await JWT.jwtDecode(token);
+            let idDecode = await cryptLib.decryptAES(jwtDecode.id);
+            const params = request.query;
+            //Logic pagination 
+            let skipData = Number(params.page) * Number(params.per_page);
+            let takeData = params.per_page;
+            let results = {}
+            const t = await prismaClient.$transaction(async (tx) => {
+                const findPagination = await tx.eventJoin.findMany({
+                    where: {
+                        event_id: Number(params.event_id)
+                    },
+                    select: {
+                        // Event: {
+                        //     select: {
+                        //         name: true,
+                        //         detail: true,
+                        //         due_date: true,
+                        //         max_amount: true,
+                        //         MasterLocation: {
+                        //             select: {
+                        //                 province: true,
+                        //                 district: true,
+                        //                 zipcode: true,
+                        //                 address: true
+                        //             }
+                        //         }
+                        //     }
+                        // },
+                        UserOnEventJoin: {
+                            select: {
+                                user_id: true,
+                                created_at: true,
+                                EventJoin: {
+                                    select: {
+                                        description: true,
+                                        event_id: true
+                                    }
+                                },
+                                User: {
+                                    select: {
+                                        name: true,
+                                        lastname: true,
+                                        telephone: true,
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    skip: Number(skipData),
+                    take: Number(takeData),
+                    orderBy: {
+                        created_at: "desc"
+                    }
+                });
+                const countAll = await tx.eventJoin.count({
+                    where: {
+                        event_id: Number(params.event_id)
+                    }
+                });
+                results = {
+                    data: findPagination,
+                    totalRecord: countAll,
+                }
+                return !_.isEmpty(findPagination) ? results : null;
+            })
+            if (!_.isEmpty(t)) {
+                baseModel.IBaseCollectionResultsPaginationModel = {
+                    status: true,
+                    status_code: httpResponse.STATUS_200.status_code,
+                    message: httpResponse.STATUS_200.message,
+                    results: results.data,
+                    total_record: results.totalRecord,
+                    page: params.page,
+                    per_page: params.per_page
+                }
+                return reply.response(await baseResult.IBaseCollectionResultsPagination(baseModel.IBaseCollectionResultsPaginationModel))
+            }
+            else {
+                baseModel.IBaseCollectionResultsPaginationModel = {
+                    status: true,
+                    status_code: httpResponse.STATUS_201_NOCONENT.status_code,
+                    message: httpResponse.STATUS_201_NOCONENT.message,
+                    results: null,
+                    total_record: 0,
+                    page: 0,
+                    per_page: 0
+                }
+                return reply.response(await baseResult.IBaseCollectionResultsPagination(baseModel.IBaseCollectionResultsPaginationModel))
+            }
+        }
+        catch (e) {
+            console.log(e);
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
 const getAllEventRegister = {
     handler: async (request, reply) => {
         try {
@@ -340,7 +441,7 @@ const getAllEventRegister = {
             let takeData = params.per_page;
             let results = {}
             const t = await prismaClient.$transaction(async (tx) => {
-                const findPagination = await prismaClient.event.findMany({
+                const findPagination = await tx.event.findMany({
                     where: {
                         User: {
                             id: Number(idDecode)
@@ -352,7 +453,7 @@ const getAllEventRegister = {
                         due_date: 'desc'
                     }
                 });
-                const countAll = await prismaClient.event.count({
+                const countAll = await tx.event.count({
                     where: {
                         User: {
                             id: Number(idDecode)
@@ -407,7 +508,7 @@ const updateEvent = {
             const { value, error } = validateEvent.updateEventValidate.validate(payload);
             if (!error) {
                 const t = await prismaClient.$transaction(async (tx) => {
-                    for(const item of value){
+                    for (const item of value) {
                         const updateEvent = await tx.event.update(
                             {
                                 where: {
@@ -565,8 +666,8 @@ const getAllEvent = {
                             }
                         }
                     },
-                    orderBy : {
-                        created_at : "desc"
+                    orderBy: {
+                        created_at: "desc"
                     }
                 });
 
@@ -1549,6 +1650,7 @@ module.exports = {
     getAllEvent,
     uploadImageEvent,
     getAllEventRegister,
+    getEventRegisterUserJoin,
 
     //Test
     cryptTest,
