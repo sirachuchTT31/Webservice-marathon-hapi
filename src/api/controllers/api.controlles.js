@@ -876,7 +876,7 @@ const getAllAdminBackoffice = {
             let takeData = params.per_page;
             let results = {}
             const t = await prismaClient.$transaction(async (tx) => {
-                const findPagination = await prismaClient.user.findMany({
+                const findPagination = await tx.user.findMany({
                     where: {
                         role: 'admin'
                     },
@@ -886,7 +886,7 @@ const getAllAdminBackoffice = {
                     skip: Number(skipData),
                     take: Number(takeData),
                 });
-                const countAll = await prismaClient.user.count({
+                const countAll = await tx.user.count({
                     where : {
                         role : 'admin'
                     }
@@ -1102,33 +1102,58 @@ const deleteAdminBackoffice = {
 
 //FIXME: Organizer
 const getAllOrganizerBackoffice = {
-    handler: async (reqeust, reply) => {
+    handler: async (request, reply) => {
         try {
-            const findAll = prismaClient.user.findMany({
-                where: {
-                    role: 'organizer'
-                },
-                orderBy: {
-                    created_at: 'desc'
+            const params = request.query
+            //Logic pagination 
+            let skipData = Number(params.page) * Number(params.per_page);
+            let takeData = params.per_page;
+            let results = {}
+            const t = await prismaClient.$transaction(async (tx) => {
+                const findPagination = await tx.user.findMany({
+                    where : {
+                        role : 'organizer'
+                    },
+                    orderBy : {
+                        created_at : 'desc'
+                    },
+                    skip: Number(skipData),
+                    take: Number(takeData),
+                });
+                const countAll = await tx.user.count({
+                    where : {
+                        role : 'organizer'
+                    }
+                });
+                results = {
+                    data: findPagination,
+                    totalRecord: countAll,
                 }
-            });
-            if (!_.isEmpty(findAll)) {
-                baseModel.IBaseCollectionResultsModel = {
+                return !_.isEmpty(findPagination) ? results : null;
+            })
+            if (!_.isEmpty(t)) {
+                baseModel.IBaseCollectionResultsPaginationModel = {
                     status: true,
                     status_code: httpResponse.STATUS_200.status_code,
                     message: httpResponse.STATUS_200.message,
-                    results: findAll
+                    results: results.data,
+                    total_record: results.totalRecord,
+                    page: params.page,
+                    per_page: params.per_page
                 }
-                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
+                return reply.response(await baseResult.IBaseCollectionResultsPagination(baseModel.IBaseCollectionResultsPaginationModel))
             }
             else {
-                baseModel.IBaseCollectionResultsModel = {
-                    status: false,
-                    status_code: httpResponse.STATUS_500.message,
-                    message: httpResponse.STATUS_500.message,
-                    results: []
+                baseModel.IBaseCollectionResultsPaginationModel = {
+                    status: true,
+                    status_code: httpResponse.STATUS_201_NOCONENT.status_code,
+                    message: httpResponse.STATUS_201_NOCONENT.message,
+                    results: null,
+                    total_record: 0,
+                    page: 0,
+                    per_page: 0
                 }
-                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
+                return reply.response(await baseResult.IBaseCollectionResultsPagination(baseModel.IBaseCollectionResultsPaginationModel))
             }
         }
         catch (e) {
@@ -1143,7 +1168,7 @@ const createOrganizerBackoffice = {
         try {
             const payload = request.payload;
             const token = request.headers.authorization;
-            const { value, error } = validateBackoffice.createOrganizerValidate(payload);
+            const { value, error } = validateBackoffice.createOrganizerValidate.validate(payload);
             if (!error) {
                 const token = request.headers.authorization.replace("Bearer ", "")
                 const jwtDecode = await JWT.jwtDecode(token)
@@ -1267,7 +1292,7 @@ const deleteOrganizerBackoffice = {
     handler: async (request, reply) => {
         try {
             const payload = request.payload
-            const { value, error } = validateBackoffice.deleteOrganizerValidate(payload)
+            const { value, error } = validateBackoffice.deleteOrganizerValidate.validate(payload)
             if (!error) {
                 const response = await prismaClient.user.delete({
                     where: {
