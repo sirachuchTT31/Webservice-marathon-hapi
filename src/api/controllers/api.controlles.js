@@ -345,26 +345,11 @@ const getEventRegisterUserJoin = {
                         event_id: Number(params.event_id)
                     },
                     select: {
-                        // Event: {
-                        //     select: {
-                        //         name: true,
-                        //         detail: true,
-                        //         due_date: true,
-                        //         max_amount: true,
-                        //         MasterLocation: {
-                        //             select: {
-                        //                 province: true,
-                        //                 district: true,
-                        //                 zipcode: true,
-                        //                 address: true
-                        //             }
-                        //         }
-                        //     }
-                        // },
                         UserOnEventJoin: {
                             select: {
                                 user_id: true,
                                 created_at: true,
+                                status_code : true,
                                 EventJoin: {
                                     select: {
                                         description: true,
@@ -392,8 +377,12 @@ const getEventRegisterUserJoin = {
                         event_id: Number(params.event_id)
                     }
                 });
+                let newData = []
+                findPagination.forEach((res) => {
+                    newData.push(...res.UserOnEventJoin)
+                })
                 results = {
-                    data: findPagination,
+                    data: newData,
                     totalRecord: countAll,
                 }
                 return !_.isEmpty(findPagination) ? results : null;
@@ -881,34 +870,61 @@ const getAllAdminBackoffice = {
     description: 'Get All Admin',
     handler: async (request, reply) => {
         try {
-            const findAll = await prismaClient.user.findMany({
-                where: {
-                    role: 'admin'
-                },
-                orderBy: {
-                    created_at: 'desc'
+            const params = request.query
+            //Logic pagination 
+            let skipData = Number(params.page) * Number(params.per_page);
+            let takeData = params.per_page;
+            let results = {}
+            const t = await prismaClient.$transaction(async (tx) => {
+                const findPagination = await prismaClient.user.findMany({
+                    where: {
+                        role: 'admin'
+                    },
+                    orderBy: {
+                        created_at: 'desc'
+                    },
+                    skip: Number(skipData),
+                    take: Number(takeData),
+                });
+                const countAll = await prismaClient.user.count({
+                    where : {
+                        role : 'admin'
+                    }
+                })
+
+                results = {
+                    data: findPagination,
+                    totalRecord: countAll,
                 }
+                return !_.isEmpty(findPagination) ? results : null;
             })
-            if (!_.isEmpty(findAll)) {
-                baseModel.IBaseCollectionResultsModel = {
+            if (!_.isEmpty(t)) {
+                baseModel.IBaseCollectionResultsPaginationModel = {
                     status: true,
                     status_code: httpResponse.STATUS_200.status_code,
                     message: httpResponse.STATUS_200.message,
-                    results: findAll
+                    results: results.data,
+                    total_record: results.totalRecord,
+                    page: params.page,
+                    per_page: params.per_page
                 }
-                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
+                return reply.response(await baseResult.IBaseCollectionResultsPagination(baseModel.IBaseCollectionResultsPaginationModel))
             }
             else {
-                baseModel.IBaseCollectionResultsModel = {
-                    status: false,
-                    status_code: httpResponse.STATUS_500.message,
-                    message: httpResponse.STATUS_500.message,
-                    results: []
+                baseModel.IBaseCollectionResultsPaginationModel = {
+                    status: true,
+                    status_code: httpResponse.STATUS_201_NOCONENT.status_code,
+                    message: httpResponse.STATUS_201_NOCONENT.message,
+                    results: null,
+                    total_record: 0,
+                    page: 0,
+                    per_page: 0
                 }
-                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
+                return reply.response(await baseResult.IBaseCollectionResultsPagination(baseModel.IBaseCollectionResultsPaginationModel))
             }
         }
         catch (e) {
+            console.log(e)
             return reply.response(Response.InternalServerError(e.message))
         }
     }
