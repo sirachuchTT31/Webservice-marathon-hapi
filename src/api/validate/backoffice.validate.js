@@ -53,12 +53,21 @@ const deleteMemberValidate = Joi.object().keys({
 });
 
 //Master location
+const createMasterLocationValidate = Joi.object().keys({
+    province: Joi.string().required(),
+    district: Joi.string().required(),
+    zipcode: Joi.string().required(),
+    address: Joi.string().required(),
+    is_active : Joi.boolean().required()
+});
+
 const updateMasterLocationValidate = Joi.object().keys({
     id : Joi.number().required(),
     province: Joi.string().required(),
     district: Joi.string().required(),
     zipcode: Joi.string().required(),
-    address: Joi.string().required()
+    address: Joi.string().required(),
+    is_active : Joi.boolean().required()
 });
 
 const deleteMasterLocationValidate = Joi.object().keys({
@@ -74,6 +83,7 @@ module.exports = {
     updateMemberValidate,
     deleteMemberValidate,
     //Master Location 
+    createMasterLocationValidate,
     updateMasterLocationValidate,
     deleteMasterLocationValidate,
 }

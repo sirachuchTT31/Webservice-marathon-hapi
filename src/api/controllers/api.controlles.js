@@ -730,7 +730,7 @@ const createMasterLocationBackoffice = {
             const token = request.headers.authorization.replace("Bearer ", "")
             const jwtDecode = await JWT.jwtDecode(token)
             const payload = request.payload
-            const { value, error } = validateMasterData.createMasterLocation.validate(payload)
+            const { value, error } = validateBackoffice.createMasterLocationValidate.validate(payload)
             let idDecode = await cryptLib.decryptAES(jwtDecode.id)
             if (!error) {
                 const response = await prismaClient.masterLocation.create({
@@ -739,6 +739,7 @@ const createMasterLocationBackoffice = {
                         address: value.address,
                         district: value.district,
                         zipcode: value.zipcode,
+                        is_active : value.is_active,
                         created_by: Number(idDecode)
                     }
                 });
@@ -776,7 +777,7 @@ const updateMasterLocationBackoffice = {
     handler: async (request, reply) => {
         try {
             const payload = request.payload;
-            const { value, error } = validateBackoffice.updateMasterLocationValidate(payload)
+            const { value, error } = validateBackoffice.updateMasterLocationValidate.validate(payload)
             if (!error) {
                 const token = request.headers.authorization.replace("Bearer ", "")
                 const jwtDecode = await JWT.jwtDecode(token)
@@ -790,6 +791,7 @@ const updateMasterLocationBackoffice = {
                         district: value.district,
                         zipcode: value.zipcode,
                         address: value.address,
+                        is_active : value.is_active,
                         updated_by: Number(idDecode)
                     }
                 });
