@@ -349,7 +349,7 @@ const getEventRegisterUserJoin = {
                             select: {
                                 user_id: true,
                                 created_at: true,
-                                status_code : true,
+                                status_code: true,
                                 EventJoin: {
                                     select: {
                                         description: true,
@@ -739,7 +739,7 @@ const createMasterLocationBackoffice = {
                         address: value.address,
                         district: value.district,
                         zipcode: value.zipcode,
-                        is_active : value.is_active,
+                        is_active: value.is_active,
                         created_by: Number(idDecode)
                     }
                 });
@@ -791,7 +791,7 @@ const updateMasterLocationBackoffice = {
                         district: value.district,
                         zipcode: value.zipcode,
                         address: value.address,
-                        is_active : value.is_active,
+                        is_active: value.is_active,
                         updated_by: Number(idDecode)
                     }
                 });
@@ -889,8 +889,8 @@ const getAllAdminBackoffice = {
                     take: Number(takeData),
                 });
                 const countAll = await tx.user.count({
-                    where : {
-                        role : 'admin'
+                    where: {
+                        role: 'admin'
                     }
                 })
 
@@ -1113,18 +1113,18 @@ const getAllOrganizerBackoffice = {
             let results = {}
             const t = await prismaClient.$transaction(async (tx) => {
                 const findPagination = await tx.user.findMany({
-                    where : {
-                        role : 'organizer'
+                    where: {
+                        role: 'organizer'
                     },
-                    orderBy : {
-                        created_at : 'desc'
+                    orderBy: {
+                        created_at: 'desc'
                     },
                     skip: Number(skipData),
                     take: Number(takeData),
                 });
                 const countAll = await tx.user.count({
-                    where : {
-                        role : 'organizer'
+                    where: {
+                        role: 'organizer'
                     }
                 });
                 results = {
@@ -1341,18 +1341,18 @@ const getAllMemberBackoffice = {
             let results = {}
             const t = await prismaClient.$transaction(async (tx) => {
                 const findPagination = await tx.user.findMany({
-                    where : {
-                        role : 'member'
+                    where: {
+                        role: 'member'
                     },
-                    orderBy : {
-                        created_at : 'desc'
+                    orderBy: {
+                        created_at: 'desc'
                     },
                     skip: Number(skipData),
                     take: Number(takeData),
                 });
                 const countAll = await tx.user.count({
-                    where : {
-                        role : 'member'
+                    where: {
+                        role: 'member'
                     }
                 });
                 results = {
@@ -1572,44 +1572,72 @@ const createEventBackoffice = {
     }
 }
 
-const getEventBackoffice = {
+const getAllJobApprovedEventBackoffice = {
     handler: async (request, reply) => {
         try {
-            const getEvent = await prismaClient.event.findMany(
-                {
+            const params = request.query
+            //Logic pagination 
+            let skipData = Number(params.page) * Number(params.per_page);
+            let takeData = params.per_page;
+            let results = {}
+            const t = await prismaClient.$transaction(async (tx) => {
+                const findPagination = await tx.event.findMany(
+                    {
+                        where: {
+                            status_code: '01'
+                        },
+                        include: {
+                            MasterLocation: {
+                                select: {
+                                    id: true,
+                                    province: true,
+                                    address: true,
+                                    zipcode: true,
+                                    district: true
+                                }
+                            }
+                        },
+                        orderBy: {
+                            created_at: 'desc'
+                        },
+                        skip: Number(skipData),
+                        take: Number(takeData)
+                    }
+                );
+                const countAll = await tx.event.count({
                     where: {
                         status_code: '01'
                     },
-                    include: {
-                        MasterLocation: {
-                            select: {
-                                id: true,
-                                province: true,
-                                address: true,
-                                zipcode: true,
-                                district: true
-                            }
-                        }
-                    }
+                })
+                results = {
+                    data: findPagination,
+                    totalRecord: countAll,
                 }
-            );
-            if (!_.isEmpty(getEvent)) {
-                baseModel.IBaseCollectionResultsModel = {
+                return !_.isEmpty(findPagination) ? results : null;
+            });
+            if (!_.isEmpty(t)) {
+                baseModel.IBaseCollectionResultsPaginationModel = {
                     status: true,
                     status_code: httpResponse.STATUS_200.status_code,
                     message: httpResponse.STATUS_200.message,
-                    results: getEvent
+                    results: results.data,
+                    total_record: results.totalRecord,
+                    page: params.page,
+                    per_page: params.per_page
                 }
-                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
+                return reply.response(await baseResult.IBaseCollectionResultsPagination(baseModel.IBaseCollectionResultsPaginationModel))
             }
             else {
-                baseModel.IBaseCollectionResultsModel = {
-                    status: false,
-                    status_code: httpResponse.STATUS_200.status_code,
-                    message: httpResponse.STATUS_200.message,
-                    results: []
+                baseModel.IBaseCollectionResultsPaginationModel = {
+                    status: true,
+                    status_code: httpResponse.STATUS_201_NOCONENT.status_code,
+                    message: httpResponse.STATUS_201_NOCONENT.message,
+                    results: null,
+                    total_record: 0,
+                    page: 0,
+                    per_page: 0
                 }
-                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
+                return reply.response(await baseResult.IBaseCollectionResultsPagination(baseModel.IBaseCollectionResultsPaginationModel))
             }
         }
         catch (e) {
@@ -1728,7 +1756,7 @@ module.exports = {
     createMasterLocationBackoffice,
     updateMasterLocationBackoffice,
     deleteMasterLocationBackoffice,
-    getEventBackoffice,
+    getAllJobApprovedEventBackoffice,
     updateEventBackoffice,
     getAllOrganizerBackoffice,
     createOrganizerBackoffice,

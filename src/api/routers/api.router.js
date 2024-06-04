@@ -59,8 +59,8 @@ const routers = [
     //************************Back-office************************** */
     {
         method: 'GET',
-        path: '/api/get-event-backoffice',
-        config: Controller.getEventBackoffice
+        path: '/api/get-all-job-event-backoffice',
+        config: Controller.getAllJobApprovedEventBackoffice
     },
     {
         method: 'POST',
