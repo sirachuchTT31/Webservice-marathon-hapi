@@ -15,6 +15,7 @@ const JWT = require('../../utils/authentication.js')
 const Handler = require('../handler/api.handler.js');
 const cryptLib = require('../../utils/crypt-lib.js')
 const Response = require('../../constant/response.js')
+const FormatDate = require('../../utils/format-date.js')
 
 //FIXME: Master data
 const getAllMasterLocation = {
@@ -1579,12 +1580,29 @@ const getAllJobApprovedEventBackoffice = {
             //Logic pagination 
             let skipData = Number(params.page) * Number(params.per_page);
             let takeData = params.per_page;
+            let keyword = params.keyword;
+            let startDate = params.start_date;
+            let endDate = params.end_date;
             let results = {}
             const t = await prismaClient.$transaction(async (tx) => {
                 const findPagination = await tx.event.findMany(
                     {
                         where: {
-                            status_code: '01'
+                            status_code: '01',
+                            AND: [
+                                {
+                                    name: {
+                                        contains: !_.isEmpty(keyword) ? keyword : undefined
+                                    }
+                                },
+                                {
+                                    due_date: {
+                                        gte: !_.isEmpty(startDate) ? FormatDate.CovertToDate(startDate) : undefined,
+                                        lte: !_.isEmpty(endDate) ? FormatDate.CovertToDate(endDate) : undefined,
+                                    }
+                                }
+                            ]
+
                         },
                         include: {
                             MasterLocation: {
