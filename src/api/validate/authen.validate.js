@@ -5,6 +5,9 @@ const signInValidate = Joi.object().keys({
     password: Joi.string().required()
 });
 
+const signOutValidate = Joi.object().keys({
+    authen_log_id : Joi.number().required()
+})
 
 const registerValidate = Joi.object().keys({
     username: Joi.string().required(),
@@ -18,5 +21,6 @@ const registerValidate = Joi.object().keys({
 
 module.exports = {
     signInValidate,
+    signOutValidate,
     registerValidate
 }

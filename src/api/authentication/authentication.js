@@ -13,10 +13,10 @@ const cryptLib = require('../../utils/crypt-lib.js')
 const Constrat = require('../../constant/authentication-response.js')
 const Response = require('../../constant/response.js')
 const signIn = {
-    tags : ['api'],
-    description : 'Sign in',
-    validate : {
-        payload : authenValidate.signInValidate
+    tags: ['api'],
+    description: 'Sign in',
+    validate: {
+        payload: authenValidate.signInValidate
     },
     auth: false,
     handler: async (request, reply) => {
@@ -51,6 +51,18 @@ const signIn = {
                     const token = await generateAccessToken(payloadJWT);
                     const refreshToken = await generateRefreshToken(payloadJWT);
                     const tokenDecode = await jwtDecode(token);
+                    const t = await prismaClient.$transaction(async (tx) => {
+                            const createLog = await tx.loginLog.create({
+                                data: {
+                                    type_login: 'Normal Login',
+                                    user_id: findAuthen.id
+                                },
+                                select: {
+                                    id: true
+                                }
+                            });
+                            return createLog.id ? createLog.id : null
+                    })
                     baseModel.IBaseSingleResultModel = {
                         status: true,
                         status_code: httpResponse.STATUS_200.status_code,
@@ -59,6 +71,7 @@ const signIn = {
                             access_token: token,
                             refresh_token: refreshToken,
                             payload: tokenDecode,
+                            authen_log_id: t
                         },
                     }
                     return reply.response(await baseResult.IBaseSingleResult(baseModel.IBaseSingleResultModel))
@@ -80,6 +93,49 @@ const signIn = {
         catch (e) {
             console.error(e)
             return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
+
+const signOut = {
+    auth : false,
+    handler: async (request, reply) => {
+        try {
+            const payload = request.payload;
+            const { value, error } = authenValidate.signOutValidate.validate(payload);
+            if (!error) {
+                let currentDate = new Date().toISOString()
+                const t = await prismaClient.loginLog.update({
+                    data: {
+                        logout_time: currentDate
+                    },
+                    where: {
+                        id: Number(value.authen_log_id)
+                    }
+                });
+                if(!_.isEmpty(t)){
+                    baseModel.IBaseNocontentModel = {
+                        status: true,
+                        message: 'Update success',
+                        status_code: httpResponse.STATUS_200.status_code,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                }
+                else {
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        message: 'Update fail',
+                        status_code: httpResponse.STATUS_200.status_code,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                }
+            }
+            else {
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
+            }
+        }
+        catch (e) {
+            console.log(e)
         }
     }
 }
@@ -278,6 +334,7 @@ const registerOrganizer = {
 
 module.exports = {
     signIn,
+    signOut,
     refreshToken,
     registerMembers,
     registerOrganizer,

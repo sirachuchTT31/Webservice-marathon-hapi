@@ -8,6 +8,11 @@ const routers = [
     },
     {
         method : 'POST',
+        path : '/api/signout',
+        config : authenticationHandler.signOut
+    },
+    {
+        method : 'POST',
         path : '/api/refresh',
         config : authenticationHandler.refreshToken
     },
