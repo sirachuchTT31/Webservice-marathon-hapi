@@ -2,7 +2,8 @@ const Joi = require('joi')
 
 const updateEventValidate = Joi.object().keys({
     event_id : Joi.number().required(),
-    status : Joi.string().required()
+    status : Joi.string().required(),
+    is_active : Joi.boolean().required()
 });
 
 

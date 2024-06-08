@@ -631,13 +631,19 @@ const uploadImageEvent = {
 const getAllEvent = {
     handler: async (request, reply) => {
         try {
+            const params = request.query;
+            //Logic pagination 
+            let skipData = Number(params.page) * Number(params.per_page);
+            let takeData = params.per_page;
+            let results = {}
             const t = await prismaClient.$transaction(async (tx) => {
                 let currentDate = new Date()
-                const findAll = await tx.event.findMany({
+                const findPagination = await tx.event.findMany({
                     where: {
                         AND: [
                             {
-                                status_code: '02'
+                                status_code: '02',
+                                is_active: true
                             },
                             {
                                 due_date: {
@@ -656,30 +662,58 @@ const getAllEvent = {
                             }
                         }
                     },
+                    skip: Number(skipData),
+                    take: Number(takeData),
                     orderBy: {
-                        created_at: "desc"
+                        due_date: "desc"
                     }
                 });
 
-                return _.isEmpty(findAll) ? null : findAll
+                const countAll = await tx.event.count({
+                    where: {
+                        AND: [
+                            {
+                                status_code: '02',
+                                is_active: true
+                            },
+                            {
+                                due_date: {
+                                    gte: currentDate
+                                }
+                            }
+                        ]
+                    }
+                })
+
+                results = {
+                    data: findPagination,
+                    totalRecord: countAll,
+                }
+                return !_.isEmpty(findPagination) ? results : null;
             })
             if (!_.isEmpty(t)) {
-                baseModel.IBaseCollectionResultsModel = {
+                baseModel.IBaseCollectionResultsPaginationModel = {
                     status: true,
                     status_code: httpResponse.STATUS_200.status_code,
                     message: httpResponse.STATUS_200.message,
-                    results: t
+                    results: results.data,
+                    total_record: results.totalRecord,
+                    page: params.page,
+                    per_page: params.per_page
                 }
-                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
+                return reply.response(await baseResult.IBaseCollectionResultsPagination(baseModel.IBaseCollectionResultsPaginationModel))
             }
             else {
-                baseModel.IBaseCollectionResultsModel = {
+                baseModel.IBaseCollectionResultsPaginationModel = {
                     status: true,
                     status_code: httpResponse.STATUS_201_NOCONENT.status_code,
                     message: httpResponse.STATUS_201_NOCONENT.message,
-                    results: []
+                    results: null,
+                    total_record: 0,
+                    page: 0,
+                    per_page: 0
                 }
-                return reply.response(await baseResult.IBaseCollectionResults(baseModel.IBaseCollectionResultsModel))
+                return reply.response(await baseResult.IBaseCollectionResultsPagination(baseModel.IBaseCollectionResultsPaginationModel))
             }
         }
         catch (e) {
@@ -1681,6 +1715,7 @@ const updateEventBackoffice = {
                         },
                         data: {
                             status_code: value.status,
+                            is_active : value.is_active,
                             updated_by: Number(idDecode),
                         }
                     })
