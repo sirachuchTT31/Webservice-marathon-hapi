@@ -13,9 +13,9 @@ const createEventValidate = Joi.object().keys({
 })
 
 const updateEventValidate = Joi.array().items(Joi.object().keys({
-        id: Joi.number().required(),
-        status_code: Joi.string().required(),
-        is_active: Joi.boolean().required()
+    id: Joi.number().required(),
+    status_code: Joi.string().required(),
+    is_active: Joi.boolean().required()
 }))
 // const updateEventValidate = Joi.object().keys({
 
@@ -24,7 +24,9 @@ const updateEventValidate = Joi.array().items(Joi.object().keys({
 
 const updateApprovedEventRegister = Joi.object().keys({
     event_join_id: Joi.number().required(),
-    status: Joi.string().required()
+    status: Joi.string().required(),
+    user_id: Joi.number().required(),
+    reason : Joi.string().allow('').allow(null)
 });
 
 

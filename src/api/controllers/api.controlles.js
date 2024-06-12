@@ -343,7 +343,12 @@ const getEventRegisterUserJoin = {
             const t = await prismaClient.$transaction(async (tx) => {
                 const findPagination = await tx.eventJoin.findMany({
                     where: {
-                        event_id: Number(params.event_id)
+                        event_id: Number(params.event_id),
+                        UserOnEventJoin : {
+                            every : {
+                                status_code : '11'
+                            }
+                        }
                     },
                     select: {
                         UserOnEventJoin: {
@@ -353,6 +358,7 @@ const getEventRegisterUserJoin = {
                                 status_code: true,
                                 EventJoin: {
                                     select: {
+                                        id : true,
                                         description: true,
                                         event_id: true
                                     }
@@ -560,14 +566,71 @@ const updateEvent = {
     }
 }
 
-const updateApprovedEventRegister = {
+//*******************อนุมัติสมาชิกทีลงทะเบียนวิ่ง****************************** */
+const updateApprovedEventRegisterUserJoin = {
     handler: async (request, reply) => {
         try {
             const payload = request.payload;
-            const token = request.headers.authorization
+            const token = request.headers.authorization;
+            const jwtDecode = await JWT.jwtDecode(token)
+            let idDecode = await cryptLib.decryptAES(jwtDecode.id)
             const { value, error } = validateEvent.updateApprovedEventRegister.validate(payload);
             if (!error) {
-
+                const t = await prismaClient.$transaction(async (tx) => {
+                    const updateUserOnEventJoin = await tx.userOnEventJoin.update({
+                        data: {
+                            status_code: value.status,
+                            updated_by: Number(idDecode)
+                        },
+                        where: {
+                            event_join_id_user_id : {
+                                event_join_id : value.event_join_id,
+                                user_id : value.user_id
+                            }
+                        },
+                        select: {
+                            user_id: true
+                        }
+                    });
+                    await tx.approvedEventJoin.create({
+                        data: {
+                            status_code: value.status,
+                            approved_by: Number(idDecode),
+                            reason: value.reason,
+                            event_join_id: value.event_join_id,
+                            user_id: updateUserOnEventJoin.user_id,
+                            created_by: Number(idDecode)
+                        }
+                    })
+                    await tx.transaction.create({
+                        data: {
+                            status: value.status,
+                            type: 'Event_Join_Approved',
+                            detail: "Approved event user join by organizer",
+                            event_join_id: value.event_join_id,
+                            created_by: Number(idDecode)
+                        },
+                    })
+                    return updateUserOnEventJoin.user_id ? true : false
+                });
+                if (t === true) {
+                    baseModel.IBaseNocontentModel = {
+                        status: true,
+                        status_code: httpResponse.STATUS_200.status_code,
+                        error_message: '',
+                        message: 'Update successfully'
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+                }
+                else {
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
+                        message: 'Update failed',
+                        error_message: httpResponse.STATUS_CREATED.message,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
             }
         }
         catch (e) {
@@ -1715,7 +1778,7 @@ const updateEventBackoffice = {
                         },
                         data: {
                             status_code: value.status,
-                            is_active : value.is_active,
+                            is_active: value.is_active,
                             updated_by: Number(idDecode),
                         }
                     })
@@ -1797,6 +1860,7 @@ module.exports = {
     createEvent,
     updateEvent,
     getAllEvent,
+    updateApprovedEventRegisterUserJoin,
     uploadImageEvent,
     getAllEventRegister,
     getEventRegisterUserJoin,
