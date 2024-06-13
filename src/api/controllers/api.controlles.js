@@ -807,7 +807,7 @@ const getAllMasterLocationBackoffice = {
             }
             else {
                 baseModel.IBaseCollectionResultsModel = {
-                    status: false,
+                    status: true,
                     status_code: httpResponse.STATUS_201_NOCONENT.status_code,
                     message: httpResponse.STATUS_201_NOCONENT.message,
                     results: []
