@@ -5,12 +5,12 @@ const _ = require('underscore');
 const Boom = require('@hapi/boom')
 const { jwtVerify } = require('./src/utils/authentication.js')
 const Config = require('./src/config/config.js')
-const EventJob = require('./src/batch/batch.js')
+const webJob = require('./src/batch/batch.js')
 const init = async () => {
     const server = Hapi.server({
         port: process.env.PORT,
         host: process.env.HOST,
-        routes : Config.server.connection.routers
+        routes: Config.server.connection.routers
     })
     await server.register(config.register)
     server.auth.strategy('jwt', 'bearer-access-token', {
@@ -25,9 +25,10 @@ const init = async () => {
         }
     })
     server.auth.default('jwt');
-    await server.start().then(async(v) => {
+    await server.start().then(async (v) => {
         //Batch 
-        await EventJob.taskUpdateEvent()
+        webJob.taskUpdateEvent();
+        webJob.taskUpdateRegisterEventUser();
         console.log(`🚀 Server listening ${server.info.uri}🚀`)
 
     }).catch((e) => {

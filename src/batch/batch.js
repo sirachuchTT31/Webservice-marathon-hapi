@@ -2,6 +2,7 @@ const cron = require('node-cron');
 const { PrismaClient } = require('@prisma/client');
 const primsa = new PrismaClient()
 const _ = require('underscore')
+const Logger = require('pino')
 
 const taskUpdateEvent = () => {
     try {
@@ -78,6 +79,50 @@ const taskUpdateEvent = () => {
     }
 }
 
+const taskUpdateRegisterEventUser = () => {
+    try {
+        cron.schedule('*/1 * * * *', async () => {
+            Logger.info("🚀 ~ start batch payment user ")
+            let currentDate = new Date()
+            await primsa.$transaction(async (tx) => {
+                const findPaymentDuedate = await tx.userOnEventJoin.findMany({
+                    where: {
+                        AND: [
+                            {
+                                due_date: {
+                                    lt: currentDate
+                                },
+                            },
+                            {
+                                status_code: {
+                                    equals: '13'
+                                }
+                            }
+                        ]
+                    }
+                });
+                if (!_.isEmpty(findPaymentDuedate)) {
+                    for (const data of findPaymentDuedate) {
+                        await tx.userOnEventJoin.update({
+                            where: {
+                                event_join_id: Number(data.event_join_id)
+                            },
+                            data: {
+                                status_code: '00'
+                            }
+                        });
+                    }
+                }
+            });
+            Logger.info("🚀 ~ Batch run task payment user:",)
+        });
+    }
+    catch (e) {
+        Logger.error(e.message)
+    }
+}
+
 module.exports = {
-    taskUpdateEvent
+    taskUpdateEvent,
+    taskUpdateRegisterEventUser
 }

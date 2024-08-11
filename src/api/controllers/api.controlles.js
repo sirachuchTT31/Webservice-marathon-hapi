@@ -184,7 +184,8 @@ const getAllHistory = {
             let idDecode = await cryptLib.decryptAES(jwtDecode.id)
             const params = request.query
             //Logic pagination 
-            let skipData = Number(params.page) * Number(params.per_page);
+            // let skipData = Number(params.page) - 1 * Number(params.per_page);
+            let skipData = (Number(params.page) - 1) * Number(params.per_page);
             let takeData = params.per_page;
             let results = {}
             const t = await prismaClient.$transaction(async (tx) => {
@@ -337,7 +338,7 @@ const getEventRegisterUserJoin = {
             let idDecode = await cryptLib.decryptAES(jwtDecode.id);
             const params = request.query;
             //Logic pagination 
-            let skipData = Number(params.page) * Number(params.per_page);
+            let skipData = (Number(params.page) - 1) * Number(params.per_page);
             let takeData = params.per_page;
             let results = {}
             const t = await prismaClient.$transaction(async (tx) => {
@@ -433,7 +434,7 @@ const getAllEventRegister = {
             let idDecode = await cryptLib.decryptAES(jwtDecode.id);
             const params = request.query;
             //Logic pagination 
-            let skipData = Number(params.page) * Number(params.per_page);
+            let skipData = (Number(params.page) - 1) * Number(params.per_page);
             let takeData = params.per_page;
             let results = {}
             const t = await prismaClient.$transaction(async (tx) => {
@@ -696,7 +697,7 @@ const getAllEvent = {
         try {
             const params = request.query;
             //Logic pagination 
-            let skipData = Number(params.page) * Number(params.per_page);
+            let skipData = (Number(params.page) - 1) * Number(params.per_page);
             let takeData = params.per_page;
             let results = {}
             const t = await prismaClient.$transaction(async (tx) => {
@@ -972,7 +973,7 @@ const getAllAdminBackoffice = {
         try {
             const params = request.query
             //Logic pagination 
-            let skipData = Number(params.page) * Number(params.per_page);
+            let skipData = (Number(params.page) - 1) * Number(params.per_page);
             let takeData = params.per_page;
             let results = {}
             const t = await prismaClient.$transaction(async (tx) => {
@@ -1206,7 +1207,7 @@ const getAllOrganizerBackoffice = {
         try {
             const params = request.query
             //Logic pagination 
-            let skipData = Number(params.page) * Number(params.per_page);
+            let skipData = (Number(params.page) - 1) * Number(params.per_page);
             let takeData = params.per_page;
             let results = {}
             const t = await prismaClient.$transaction(async (tx) => {
@@ -1434,7 +1435,7 @@ const getAllMemberBackoffice = {
         try {
             const params = request.query
             //Logic pagination 
-            let skipData = Number(params.page) * Number(params.per_page);
+            let skipData = (Number(params.page) - 1) * Number(params.per_page);
             let takeData = params.per_page;
             let results = {}
             const t = await prismaClient.$transaction(async (tx) => {
@@ -1675,7 +1676,7 @@ const getAllJobApprovedEventBackoffice = {
         try {
             const params = request.query
             //Logic pagination 
-            let skipData = Number(params.page) * Number(params.per_page);
+            let skipData = (Number(params.page) - 1) * Number(params.per_page);
             let takeData = params.per_page;
             let keyword = params.keyword;
             let startDate = params.start_date;
