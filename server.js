@@ -29,6 +29,7 @@ const init = async () => {
         //Batch 
         webJob.taskUpdateEvent();
         webJob.taskUpdateRegisterEventUser();
+        webJob.taskUppdateStatusUserHistory();
         console.log(`🚀 Server listening ${server.info.uri}🚀`)
 
     }).catch((e) => {

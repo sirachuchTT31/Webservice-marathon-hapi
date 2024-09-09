@@ -204,6 +204,7 @@ const getAllHistory = {
                                             id: true,
                                             name: true,
                                             path_image: true,
+                                            due_date : true
                                         }
                                     }
                                 }
