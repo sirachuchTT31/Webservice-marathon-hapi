@@ -16,6 +16,7 @@ const Handler = require('../handler/api.handler.js');
 const cryptLib = require('../../utils/crypt-lib.js')
 const Response = require('../../constant/response.js')
 const FormatDate = require('../../utils/format-date.js')
+const generateCode = require("../../utils/generate-code.js");
 
 //FIXME: Master data
 const getAllMasterLocation = {
@@ -199,16 +200,17 @@ const getAllHistory = {
                                 select: {
                                     id: true,
                                     description: true,
+                                    Invoice: true,
                                     Event: {
                                         select: {
                                             id: true,
                                             name: true,
                                             path_image: true,
-                                            due_date : true
-                                        }
-                                    }
+                                            due_date: true,
+                                        },
+                                    },
                                 }
-                            }
+                            },
                         },
                         skip: Number(skipData),
                         take: Number(takeData),
@@ -346,9 +348,9 @@ const getEventRegisterUserJoin = {
                 const findPagination = await tx.eventJoin.findMany({
                     where: {
                         event_id: Number(params.event_id),
-                        UserOnEventJoin : {
-                            every : {
-                                status_code : '11'
+                        UserOnEventJoin: {
+                            every: {
+                                status_code: '11'
                             }
                         }
                     },
@@ -360,12 +362,12 @@ const getEventRegisterUserJoin = {
                                 status_code: true,
                                 EventJoin: {
                                     select: {
-                                        id : true,
+                                        id: true,
                                         description: true,
                                         event_id: true
                                     }
                                 },
-                                User: {
+                                Users: {
                                     select: {
                                         name: true,
                                         lastname: true,
@@ -381,6 +383,7 @@ const getEventRegisterUserJoin = {
                         created_at: "desc"
                     }
                 });
+                console.log(JSON.stringify(findPagination))
                 const countAll = await tx.eventJoin.count({
                     where: {
                         event_id: Number(params.event_id)
@@ -441,7 +444,7 @@ const getAllEventRegister = {
             const t = await prismaClient.$transaction(async (tx) => {
                 const findPagination = await tx.event.findMany({
                     where: {
-                        User: {
+                        Users: {
                             id: Number(idDecode)
                         }
                     },
@@ -453,7 +456,7 @@ const getAllEventRegister = {
                 });
                 const countAll = await tx.event.count({
                     where: {
-                        User: {
+                        Users: {
                             id: Number(idDecode)
                         }
                     },
@@ -579,15 +582,16 @@ const updateApprovedEventRegisterUserJoin = {
             const { value, error } = validateEvent.updateApprovedEventRegister.validate(payload);
             if (!error) {
                 const t = await prismaClient.$transaction(async (tx) => {
+
                     const updateUserOnEventJoin = await tx.userOnEventJoin.update({
                         data: {
                             status_code: value.status,
                             updated_by: Number(idDecode)
                         },
                         where: {
-                            event_join_id_user_id : {
-                                event_join_id : value.event_join_id,
-                                user_id : value.user_id
+                            event_join_id_user_id: {
+                                event_join_id: value.event_join_id,
+                                user_id: value.user_id
                             }
                         },
                         select: {
@@ -613,6 +617,46 @@ const updateApprovedEventRegisterUserJoin = {
                             created_by: Number(idDecode)
                         },
                     })
+
+                    // สถานะอนุมัติจะไปสร้างใบ Invoice
+                    if (value.status == 12) {
+                        const eventJoin = await tx.eventJoin.findFirst({
+                            where: {
+                                id: Number(value.event_join_id)
+                            },
+                            select: {
+                                id: true,
+                                amount: true,
+                                Event: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        price: true,
+                                        due_date: true
+                                    }
+                                }
+                            }
+                        });
+                        // Create Invoice 
+                        const invCode = generateCode.generateINV(value.user_id);
+                        const InvoiceDetail = {
+                            event_join_id: eventJoin.id,
+                            amount: eventJoin.amount,
+                            price: eventJoin.Event.price,
+                            Event: eventJoin.Event
+                        }
+                        await tx.invoice.create({
+                            data: {
+                                invoice_code: invCode,
+                                count_print: 0,
+                                user_id: value.user_id,
+                                event_id: eventJoin.Event.id,
+                                event_join_id: eventJoin.id,
+                                invoice_detail: JSON.stringify(InvoiceDetail)
+                            }
+                        });
+                    }
+
                     return updateUserOnEventJoin.user_id ? true : false
                 });
                 if (t === true) {
@@ -780,6 +824,22 @@ const getAllEvent = {
                 }
                 return reply.response(await baseResult.IBaseCollectionResultsPagination(baseModel.IBaseCollectionResultsPaginationModel))
             }
+        }
+        catch (e) {
+            console.log(e);
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
+
+// ***************** Flow ผู้ใช้งาน ********************************* /
+const createPayment = {
+    validate: {
+        payload: validateAdmin.createAdminValidate
+    },
+    handler: async (request, reply) => {
+        try {
+
         }
         catch (e) {
             console.log(e);
@@ -978,9 +1038,13 @@ const getAllAdminBackoffice = {
             let takeData = params.per_page;
             let results = {}
             const t = await prismaClient.$transaction(async (tx) => {
-                const findPagination = await tx.user.findMany({
+                const findPagination = await tx.users.findMany({
                     where: {
-                        role: 'admin'
+                        UserOnRole: {
+                            some: {
+                                role_id: 1
+                            }
+                        }
                     },
                     orderBy: {
                         created_at: 'desc'
@@ -988,10 +1052,14 @@ const getAllAdminBackoffice = {
                     skip: Number(skipData),
                     take: Number(takeData),
                 });
-                const countAll = await tx.user.count({
+                const countAll = await tx.users.count({
                     where: {
-                        role: 'admin'
-                    }
+                        UserOnRole: {
+                            some: {
+                                role_id: 1
+                            }
+                        }
+                    },
                 })
 
                 results = {
@@ -1045,17 +1113,21 @@ const createAdminBackoffice = {
             if (!error) {
                 const token = request.headers.authorization.replace("Bearer ", "")
                 const jwtDecode = await JWT.jwtDecode(token)
-                const findDuplicates = await prismaClient.user.findFirst({
+                const findDuplicates = await prismaClient.users.findFirst({
                     where: {
                         username: value.username,
-                        role: 'admin'
+                        UserOnRole: {
+                            some: {
+                                role_id: 1
+                            }
+                        }
                     }
                 })
                 let idDecode = await cryptLib.decryptAES(jwtDecode.id)
                 if (_.isEmpty(findDuplicates)) {
                     let salt = await bcrypt.genSalt(10);
                     let hash = await bcrypt.hash(value.password, salt)
-                    const response = await prismaClient.user.create({
+                    const response = await prismaClient.users.create({
                         data: {
                             username: value.username,
                             password: hash,
@@ -1066,8 +1138,12 @@ const createAdminBackoffice = {
                             email: value.email,
                             avatar: 'https://avataaars.io/?avatarStyle=Transparent&topType=ShortHairShortCurly&accessoriesType=Round&hairColor=BrownDark&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light',
                             access_status: 'Y',
-                            role: 'admin',
-                            created_by: Number(idDecode)
+                            created_by: Number(idDecode),
+                            UserOnRole: {
+                                create: {
+                                    role_id: 1
+                                }
+                            }
                         }
                     })
                     if (!_.isEmpty(response)) {
@@ -1117,10 +1193,14 @@ const updateAdminBackoffice = {
                 const token = request.headers.authorization.replace("Bearer ", "")
                 const jwtDecode = await JWT.jwtDecode(token)
                 let idDecode = await cryptLib.decryptAES(jwtDecode.id)
-                const response = await prismaClient.user.update({
+                const response = await prismaClient.users.update({
                     where: {
                         id: value.id,
-                        role: 'admin'
+                        UserOnRole: {
+                            some: {
+                                role_id: 1
+                            }
+                        }
                     },
                     data: {
                         name: value.name,
@@ -1167,7 +1247,7 @@ const deleteAdminBackoffice = {
             const payload = request.payload
             const { value, error } = validateAdmin.deleteAdminValidate.validate(payload)
             if (!error) {
-                const response = await prismaClient.user.delete({
+                const response = await prismaClient.users.delete({
                     where: {
                         id: value.id
                     }
@@ -1212,9 +1292,13 @@ const getAllOrganizerBackoffice = {
             let takeData = params.per_page;
             let results = {}
             const t = await prismaClient.$transaction(async (tx) => {
-                const findPagination = await tx.user.findMany({
+                const findPagination = await tx.users.findMany({
                     where: {
-                        role: 'organizer'
+                        UserOnRole: {
+                            some: {
+                                role_id: 2
+                            }
+                        }
                     },
                     orderBy: {
                         created_at: 'desc'
@@ -1222,9 +1306,13 @@ const getAllOrganizerBackoffice = {
                     skip: Number(skipData),
                     take: Number(takeData),
                 });
-                const countAll = await tx.user.count({
+                const countAll = await tx.users.count({
                     where: {
-                        role: 'organizer'
+                        UserOnRole: {
+                            some: {
+                                role_id: 1
+                            }
+                        }
                     }
                 });
                 results = {
@@ -1274,17 +1362,21 @@ const createOrganizerBackoffice = {
             if (!error) {
                 const token = request.headers.authorization.replace("Bearer ", "")
                 const jwtDecode = await JWT.jwtDecode(token)
-                const findDuplicates = await prismaClient.user.findFirst({
+                const findDuplicates = await prismaClient.users.findFirst({
                     where: {
                         username: value.username,
-                        role: 'organizer'
+                        UserOnRole: {
+                            some: {
+                                role_id: 2
+                            }
+                        }
                     }
                 })
                 let idDecode = await cryptLib.decryptAES(jwtDecode.id);
                 if (_.isEmpty(findDuplicates)) {
                     let salt = await bcrypt.genSalt(10);
                     let hash = await bcrypt.hash(value.password, salt)
-                    const response = await prismaClient.user.create({
+                    const response = await prismaClient.users.create({
                         data: {
                             username: value.username,
                             password: hash,
@@ -1295,7 +1387,11 @@ const createOrganizerBackoffice = {
                             email: value.email,
                             avatar: 'https://avataaars.io/?avatarStyle=Transparent&topType=ShortHairShortCurly&accessoriesType=Round&hairColor=BrownDark&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light',
                             access_status: 'Y',
-                            role: 'organizer',
+                            UserOnRole: {
+                                create: {
+                                    role_id: 2
+                                }
+                            },
                             created_by: Number(idDecode)
                         }
                     })
@@ -1346,10 +1442,14 @@ const updateOrganizerBackoffice = {
                 const token = request.headers.authorization.replace("Bearer ", "")
                 const jwtDecode = await JWT.jwtDecode(token)
                 let idDecode = await cryptLib.decryptAES(jwtDecode.id)
-                const response = await prismaClient.user.update({
+                const response = await prismaClient.users.update({
                     where: {
                         id: value.id,
-                        role: 'organizer'
+                        UserOnRole: {
+                            some: {
+                                role_id: 2
+                            }
+                        }
                     },
                     data: {
                         name: value.name,
@@ -1396,7 +1496,7 @@ const deleteOrganizerBackoffice = {
             const payload = request.payload
             const { value, error } = validateBackoffice.deleteOrganizerValidate.validate(payload)
             if (!error) {
-                const response = await prismaClient.user.delete({
+                const response = await prismaClient.users.delete({
                     where: {
                         id: value.id
                     }
@@ -1440,9 +1540,13 @@ const getAllMemberBackoffice = {
             let takeData = params.per_page;
             let results = {}
             const t = await prismaClient.$transaction(async (tx) => {
-                const findPagination = await tx.user.findMany({
+                const findPagination = await tx.users.findMany({
                     where: {
-                        role: 'member'
+                        UserOnRole: {
+                            some: {
+                                role_id: 3
+                            }
+                        }
                     },
                     orderBy: {
                         created_at: 'desc'
@@ -1450,9 +1554,13 @@ const getAllMemberBackoffice = {
                     skip: Number(skipData),
                     take: Number(takeData),
                 });
-                const countAll = await tx.user.count({
+                const countAll = await tx.users.count({
                     where: {
-                        role: 'member'
+                        UserOnRole: {
+                            some: {
+                                role_id: 3
+                            }
+                        }
                     }
                 });
                 results = {
@@ -1502,17 +1610,21 @@ const createMemberBackoffice = {
             if (!error) {
                 const token = request.headers.authorization.replace("Bearer ", "")
                 const jwtDecode = await JWT.jwtDecode(token)
-                const findDuplicates = await prismaClient.user.findFirst({
+                const findDuplicates = await prismaClient.users.findFirst({
                     where: {
                         username: value.username,
-                        role: 'member'
+                        UserOnRole: {
+                            some: {
+                                role_id: 3
+                            }
+                        }
                     }
                 })
                 let idDecode = await cryptLib.decryptAES(jwtDecode.id);
                 if (_.isEmpty(findDuplicates)) {
                     let salt = await bcrypt.genSalt(10);
                     let hash = await bcrypt.hash(value.password, salt)
-                    const response = await prismaClient.user.create({
+                    const response = await prismaClient.users.create({
                         data: {
                             username: value.username,
                             password: hash,
@@ -1523,7 +1635,11 @@ const createMemberBackoffice = {
                             email: value.email,
                             avatar: 'https://avataaars.io/?avatarStyle=Transparent&topType=ShortHairShortCurly&accessoriesType=Round&hairColor=BrownDark&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light',
                             access_status: 'Y',
-                            role: 'member',
+                            UserOnRole: {
+                                create: {
+                                    role_id: 3
+                                }
+                            },
                             created_by: Number(idDecode)
                         }
                     })
@@ -1574,10 +1690,14 @@ const updateMemberBackoffice = {
                 const token = request.headers.authorization.replace("Bearer ", "")
                 const jwtDecode = await JWT.jwtDecode(token)
                 let idDecode = await cryptLib.decryptAES(jwtDecode.id)
-                const response = await prismaClient.user.update({
+                const response = await prismaClient.users.update({
                     where: {
                         id: value.id,
-                        role: 'member'
+                        UserOnRole: {
+                            some: {
+                                role_id: 3
+                            }
+                        }
                     },
                     data: {
                         name: value.name,

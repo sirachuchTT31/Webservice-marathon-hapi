@@ -1,0 +1,31 @@
+{
+    "ROLE" : [
+        {
+            "name" : "admin"
+        } ,
+        {
+            "name" : "member"
+        },
+        {
+            "name" : "organizer"
+        }
+    ],
+    "LOCATION" :[
+        {
+            "province" : "ขอนแก่น",
+            "district" : "เมือง",
+            "zipcode" : "40000",
+            "address" : "มหาวิทยาลัยราชมงคลอีสาน",
+            "is_active" : true
+        }
+    ],
+    "ADMIN_ACCOUNT" : {
+        "username" : "adminRoot" ,
+        "password" : "$2b$10$wmaoGiqquDLCzmmw55RUUO6P0LxJoxM4DW1h2H2DyiTORyJMtStpK" ,
+        "name" : "Super Admin",
+        "lastname" : "Admin",
+        "email" : "adminRoot@gmail.com",
+        "avatar" : "https://img.freepik.com/free-psd/3d-illustration-person-with-sunglasses_23-2149436188.jpg?t=st=1729328024~exp=1729331624~hmac=16607e34d30e29a1488433b6401330b4883c149f30914a3fd39a42a744e9ed1c&w=826",
+        "access_status" : "Y"
+    }
+}

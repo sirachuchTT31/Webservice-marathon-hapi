@@ -24,9 +24,27 @@ const signIn = {
             const payload = request.payload
             const { value, error } = authenValidate.signInValidate.validate(payload)
             if (!error) {
-                const findAuthen = await prismaClient.user.findFirst({
+                const findAuthen = await prismaClient.users.findFirst({
                     where: {
                         username: value?.username
+                    },
+                    select: {
+                        id: true,
+                        password : true,
+                        username: true,
+                        lastname: true,
+                        name: true,
+                        access_status : true,
+                        UserOnRole: {
+                            select: {
+                                Role: {
+                                    select: {
+                                        id: true,
+                                        name: true
+                                    }
+                                }
+                            },
+                        }
                     }
                 })
                 if (_.isEmpty(findAuthen)) {
@@ -41,27 +59,29 @@ const signIn = {
                 const password = findAuthen.password
                 const passwordCompare = await bcrypt.compare(value.password, password)
                 if (passwordCompare === true && findAuthen.access_status === 'Y') {
+                    console.log('CHECK')
                     const payloadJWT = {
                         id: await cryptLib.encryptAES(findAuthen.id),
                         username: await cryptLib.encryptAES(findAuthen.username),
                         name: findAuthen.name,
                         lastname: findAuthen.lastname,
-                        role: await cryptLib.encryptAES(findAuthen.role)
+                        role: await cryptLib.encryptAES(findAuthen.UserOnRole[0].Role.name)
                     }
+                    console.log(payloadJWT)
                     const token = await generateAccessToken(payloadJWT);
                     const refreshToken = await generateRefreshToken(payloadJWT);
                     const tokenDecode = await jwtDecode(token);
                     const t = await prismaClient.$transaction(async (tx) => {
-                            const createLog = await tx.loginLog.create({
-                                data: {
-                                    type_login: 'Normal Login',
-                                    user_id: findAuthen.id
-                                },
-                                select: {
-                                    id: true
-                                }
-                            });
-                            return createLog.id ? createLog.id : null
+                        const createLog = await tx.loginLog.create({
+                            data: {
+                                type_login: 'Normal Login',
+                                user_id: findAuthen.id
+                            },
+                            select: {
+                                id: true
+                            }
+                        });
+                        return createLog.id ? createLog.id : null
                     })
                     baseModel.IBaseSingleResultModel = {
                         status: true,
@@ -98,7 +118,7 @@ const signIn = {
 }
 
 const signOut = {
-    auth : false,
+    auth: false,
     handler: async (request, reply) => {
         try {
             const payload = request.payload;
@@ -113,7 +133,7 @@ const signOut = {
                         id: Number(value.authen_log_id)
                     }
                 });
-                if(!_.isEmpty(t)){
+                if (!_.isEmpty(t)) {
                     baseModel.IBaseNocontentModel = {
                         status: true,
                         message: 'Update success',
@@ -148,9 +168,25 @@ const refreshToken = {
             const responseRefreshToken = await jwtVerifyRefreshToken(refreshToken);
             let decodeUsername = await cryptLib.decryptAES(responseRefreshToken?.result?.username)
             if (responseRefreshToken.isValid != false) {
-                const findAuthen = await prismaClient.user.findFirst({
+                const findAuthen = await prismaClient.users.findFirst({
                     where: {
                         username: decodeUsername
+                    },
+                    select: {
+                        id: true,
+                        username: true,
+                        lastname: true,
+                        name: true,
+                        UserOnRole: {
+                            select: {
+                                Role: {
+                                    select: {
+                                        id: true,
+                                        name: true
+                                    }
+                                }
+                            },
+                        }
                     }
                 });
                 if (!_.isEmpty(findAuthen)) {
@@ -159,7 +195,7 @@ const refreshToken = {
                         username: await cryptLib.encryptAES(findAuthen.username),
                         name: findAuthen.name,
                         lastname: findAuthen.lastname,
-                        role: await cryptLib.encryptAES(findAuthen.role)
+                        role: await cryptLib.encryptAES(findAuthen.UserOnRole[0].Role.name)
                     }
                     const accessToken = await generateAccessToken(payloadJWT, process.env.REFRESH_TOKEN_EXPIRATION);
                     const tokenDecode = await jwtDecode(accessToken);
@@ -193,16 +229,15 @@ const registerMembers = {
             const payload = request.payload
             const { value, error } = authenValidate.registerValidate.validate(payload)
             if (!error) {
-                const findDuplicates = await prismaClient.user.findFirst({
+                const findDuplicates = await prismaClient.users.findFirst({
                     where: {
                         username: value.username,
-                        role: 'member'
                     }
                 });
                 if (_.isEmpty(findDuplicates)) {
                     const salt = await bcrypt.genSalt(10);
                     const hash = await bcrypt.hash(value.password, salt);
-                    const response = await prismaClient.user.create({
+                    const response = await prismaClient.users.create({
                         data: {
                             username: value.username,
                             password: hash,
@@ -211,7 +246,11 @@ const registerMembers = {
                             email: value.email,
                             avatar: 'https://avataaars.io/?avatarStyle=Transparent&topType=ShortHairShortCurly&accessoriesType=Round&hairColor=BrownDark&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light',
                             access_status: 'Y',
-                            role: 'member'
+                            UserOnRole: {
+                                create: {
+                                    role_id: 3,
+                                }
+                            }
                         }
                     })
                     // ]);
@@ -261,16 +300,15 @@ const registerOrganizer = {
             const payload = request.payload
             const { value, error } = authenValidate.registerValidate.validate(payload)
             if (!error) {
-                const findDuplicates = await prismaClient.user.findFirst({
+                const findDuplicates = await prismaClient.users.findFirst({
                     where: {
                         username: value.username,
-                        role: 'organizer'
                     }
                 });
                 if (_.isEmpty(findDuplicates)) {
                     const salt = await bcrypt.genSalt(10);
                     const hash = await bcrypt.hash(value.password, salt);
-                    const response = await prismaClient.user.create({
+                    const response = await prismaClient.users.create({
                         data: {
                             username: value.username,
                             password: hash,
@@ -279,7 +317,11 @@ const registerOrganizer = {
                             email: value.email,
                             avatar: 'https://avataaars.io/?avatarStyle=Transparent&topType=ShortHairShortCurly&accessoriesType=Round&hairColor=BrownDark&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light',
                             access_status: 'Y',
-                            role: 'organizer'
+                            UserOnRole: {
+                                create: {
+                                    role_id: 2
+                                }
+                            }
                         }
                     })
                     if (!_.isEmpty(response)) {

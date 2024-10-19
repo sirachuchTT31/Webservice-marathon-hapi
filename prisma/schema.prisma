@@ -7,9 +7,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
+model Users {
   id                     Int                  @id @default(autoincrement())
-  username               String               @db.VarChar(100)
+  username               String               @unique @db.VarChar(100)
   password               String               @db.VarChar(100)
   name                   String               @db.VarChar(100)
   lastname               String               @db.VarChar(100)
@@ -18,7 +18,6 @@ model User {
   address                String?              @db.VarChar(255)
   avatar                 String               @db.LongText
   access_status          String               @db.VarChar(2)
-  role                   String               @db.VarChar(50)
   is_active_notification Boolean              @default(true)
   created_at             DateTime             @default(now()) @db.Timestamp(3)
   created_by             Int?
@@ -28,20 +27,38 @@ model User {
   Event                  Event[]
   TransactionPayment     TransactionPayment[]
   UserOnEventJoin        UserOnEventJoin[]
-  LoginLog               LoginLog[]
   ApprovedEventJoin      ApprovedEventJoin[]
   Invoice                Invoice[]
   Notification           Notification[]
+  UserOnRole            UserOnRole[]
 
-  @@map("user")
+  @@map("users")
+}
+
+model UserOnRole {
+  id      Int  @id @default(autoincrement())
+  user_id Int?
+  role_id Int?
+
+  Users Users? @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  Role  Role?  @relation(fields: [role_id], references: [id], onDelete: SetNull)
+
+  @@map("user_on_role")
+}
+
+model Role {
+  id          Int           @id @default(autoincrement())
+  name        String        @unique @db.VarChar(255)
+  UserOnRole UserOnRole[]
+
+  @@map("role")
 }
 
 model LoginLog {
   id          Int       @id @default(autoincrement())
   logout_time DateTime?
   type_login  String    @db.VarChar(100)
-  user_id     Int
-  User        User      @relation(fields: [user_id], references: [id])
+  user_id     Int?
   created_at  DateTime  @default(now()) @db.Timestamp(3)
   updated_at  DateTime? @default(now()) @updatedAt @db.Timestamp(3)
 
@@ -50,7 +67,7 @@ model LoginLog {
 
 model MasterLocation {
   id         Int      @id @default(autoincrement())
-  province   String   @db.VarChar(255)
+  province   String   @unique @db.VarChar(255)
   district   String   @db.VarChar(255)
   zipcode    String   @db.VarChar(50)
   address    String   @db.VarChar(255)
@@ -88,7 +105,7 @@ model Event {
   Invoice         Invoice[]
   Payment         Payment[]
   RecordDataEvent RecordDataEvent[]
-  User            User?             @relation(fields: [user_id], references: [id])
+  Users           Users?            @relation(fields: [user_id], references: [id])
   user_id         Int?
 
   @@index([location_id])
@@ -99,7 +116,7 @@ model UserOnEventJoin {
   EventJoin     EventJoin @relation(fields: [event_join_id], references: [id])
   status_code   String?   @db.VarChar(2)
   event_join_id Int
-  User          User      @relation(fields: [user_id], references: [id])
+  Users         Users     @relation(fields: [user_id], references: [id])
   user_id       Int
   created_at    DateTime  @default(now()) @db.Timestamp(3)
   created_by    Int?
@@ -107,12 +124,13 @@ model UserOnEventJoin {
   updated_by    Int?
 
   @@id([event_join_id, user_id])
-  @@map("user_on_event_join")
+  @@map("Users_on_event_join")
 }
 
 model EventJoin {
   id                Int                 @id @default(autoincrement())
   description       String?             @db.VarChar(255)
+  amount            Int?
   event_id          Int?
   created_at        DateTime            @default(now()) @db.Timestamp(3)
   created_by        Int?
@@ -123,6 +141,7 @@ model EventJoin {
   ApprovedEventJoin ApprovedEventJoin[]
   UserOnEventJoin   UserOnEventJoin[]
   RecordDataEvent   RecordDataEvent[]
+  Invoice           Invoice?
 
   @@index([event_id])
   // @@index([trans_id])
@@ -138,7 +157,7 @@ model ApprovedAccount {
   created_by  Int?
   updated_at  DateTime @default(now()) @updatedAt @db.Timestamp(3)
   updated_by  Int?
-  User        User?    @relation(fields: [user_id], references: [id])
+  Users       Users?   @relation(fields: [user_id], references: [id])
   user_id     Int?
 
   @@index([user_id])
@@ -173,7 +192,7 @@ model ApprovedEventJoin {
   updated_at    DateTime   @default(now()) @updatedAt @db.Timestamp(3)
   updated_by    Int?
   EventJoin     EventJoin? @relation(fields: [event_join_id], references: [id])
-  User          User?      @relation(fields: [user_id], references: [id])
+  Users         Users?     @relation(fields: [user_id], references: [id])
 
   @@index([event_join_id])
   @@map("approved_event_join")
@@ -197,19 +216,22 @@ model Transaction {
 }
 
 model Invoice {
-  id           Int      @id @default(autoincrement())
-  invoice_code String   @db.VarChar(100)
-  user_id      Int?
-  event_id     Int?
-  count_print  Int?
-  is_active    Boolean  @default(false)
-  Event        Event?   @relation(fields: [event_id], references: [id])
-  User         User?    @relation(fields: [user_id], references: [id])
-  created_at   DateTime @default(now()) @db.Timestamp(3)
-  created_by   Int?
-  updated_at   DateTime @default(now()) @updatedAt @db.Timestamp(3)
-  updated_by   Int?
-  Payment      Payment?
+  id             Int        @id @default(autoincrement())
+  invoice_code   String     @db.VarChar(100)
+  user_id        Int?
+  event_id       Int?
+  event_join_id  Int        @unique
+  count_print    Int?
+  is_active      Boolean    @default(false)
+  invoice_detail Json?
+  Event          Event?     @relation(fields: [event_id], references: [id])
+  EventJoin      EventJoin? @relation(fields: [event_join_id], references: [id])
+  Users          Users?     @relation(fields: [user_id], references: [id])
+  created_at     DateTime   @default(now()) @db.Timestamp(3)
+  created_by     Int?
+  updated_at     DateTime   @default(now()) @updatedAt @db.Timestamp(3)
+  updated_by     Int?
+  Payment        Payment?
 
   @@map("invoice")
 }
@@ -219,7 +241,7 @@ model Notification {
   is_view_notification Boolean
   content              String   @db.VarChar(255)
   user_id              Int?
-  User                 User?    @relation(fields: [user_id], references: [id])
+  Users                Users?   @relation(fields: [user_id], references: [id])
   created_at           DateTime @default(now()) @db.Timestamp(3)
   created_by           Int?
   updated_at           DateTime @default(now()) @updatedAt @db.Timestamp(3)
@@ -259,7 +281,7 @@ model TransactionPayment {
   updated_at DateTime @default(now()) @updatedAt @db.Timestamp(3)
   updated_by Int?
   Payment    Payment?
-  user       User     @relation(fields: [user_id], references: [id])
+  Users      Users    @relation(fields: [user_id], references: [id])
 
   @@map("transaction_payment")
 }
