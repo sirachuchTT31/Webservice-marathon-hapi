@@ -6,7 +6,8 @@ const baseResult = require('../../utils/response-base.js');
 const baseModel = require('../../utils/response-model.js')
 const Boom = require('@hapi/boom')
 const httpResponse = require('../../constant/http-response.js')
-const validateAdmin = require('../validate/admin.validate.js')
+const validateAdmin = require('../validate/admin.validate.js');
+const validatePayment = require("../validate/payment.validate.js");
 const validateMasterData = require('../validate/master-data.validate.js')
 const validateEvent = require('../validate/event.validate.js')
 const validateBackoffice = require('../validate/backoffice.validate.js')
@@ -14,7 +15,8 @@ const validateEventMember = require('../validate/event-member.validate.js')
 const JWT = require('../../utils/authentication.js')
 const Handler = require('../handler/api.handler.js');
 const cryptLib = require('../../utils/crypt-lib.js')
-const Response = require('../../constant/response.js')
+const Response = require('../../constant/response.js');
+const { StatusUserRegisterEvent, StatusUserPayment } = require('../../constant/status.js')
 const FormatDate = require('../../utils/format-date.js')
 const generateCode = require("../../utils/generate-code.js");
 
@@ -87,15 +89,16 @@ const createRegisterEvent = {
                                 created_by: Number(idDecode),
                                 Transaction: {
                                     create: {
-                                        status: '11',
+                                        status: StatusUserRegisterEvent.WAIT_FOR_PAYMENT,
                                         created_by: Number(idDecode),
-                                        type: 'JoinEvent',
+                                        type: 'Event_Join_Approved',
                                     }
                                 },
                             },
                             select: {
                                 id: true,
-                                event_id: true
+                                amount: true,
+                                Event: true
                             },
                         })
                         //remove max_amount 
@@ -122,12 +125,13 @@ const createRegisterEvent = {
                                 }
                             }
                         );
+
                         await tx.userOnEventJoin.create({
                             data: {
                                 user_id: Number(idDecode),
                                 created_by: Number(idDecode),
                                 event_join_id: createEventJoin.id,
-                                status_code: '11'
+                                status_code: StatusUserRegisterEvent.WAIT_FOR_PAYMENT
                             }
                         });
                         await tx.recordDataEvent.create({
@@ -135,6 +139,43 @@ const createRegisterEvent = {
                                 is_end: false,
                                 event_join_id: createEventJoin.id,
                                 event_id: createEventJoin.event_id,
+                            }
+                        });
+
+                        await tx.approvedEventJoin.create({
+                            data: {
+                                status_code: StatusUserRegisterEvent.WAIT_FOR_PAYMENT,
+                                event_join_id: createEventJoin.id,
+                                user_id: Number(idDecode),
+                            }
+                        });
+
+                        await tx.transaction.create({
+                            data: {
+                                status: StatusUserRegisterEvent.WAIT_FOR_PAYMENT,
+                                type: 'Event_Join_Approved',
+                                detail: "Approved event user join by organizer",
+                                event_join_id: createEventJoin.id,
+                                created_by: Number(idDecode)
+                            },
+                        });
+
+                        // Create Invoice 
+                        const invCode = generateCode.generateINV(Number(idDecode));
+                        const InvoiceDetail = {
+                            event_join_id: createEventJoin.id,
+                            amount: createEventJoin.amount,
+                            price: createEventJoin.Event.price,
+                            Event: createEventJoin.Event
+                        }
+                        await tx.invoice.create({
+                            data: {
+                                invoice_code: invCode,
+                                count_print: 0,
+                                user_id: Number(idDecode),
+                                event_id: createEventJoin.Event.id,
+                                event_join_id: createEventJoin.id,
+                                invoice_detail: JSON.stringify(InvoiceDetail)
                             }
                         });
                         //Finish job is stamp finish_time && sequence
@@ -193,7 +234,7 @@ const getAllHistory = {
                 const findPagination = await tx.userOnEventJoin.findMany(
                     {
                         where: {
-                            user_id: Number(idDecode)
+                            user_id: Number(idDecode),
                         },
                         include: {
                             EventJoin: {
@@ -207,6 +248,7 @@ const getAllHistory = {
                                             name: true,
                                             path_image: true,
                                             due_date: true,
+                                            status_code: true,
                                         },
                                     },
                                 }
@@ -575,6 +617,7 @@ const updateEvent = {
 const updateApprovedEventRegisterUserJoin = {
     handler: async (request, reply) => {
         try {
+            // ปรับเส้นนี้คือเส้น approved การชำระเงิน
             const payload = request.payload;
             const token = request.headers.authorization;
             const jwtDecode = await JWT.jwtDecode(token)
@@ -585,6 +628,7 @@ const updateApprovedEventRegisterUserJoin = {
 
                     const updateUserOnEventJoin = await tx.userOnEventJoin.update({
                         data: {
+                            // 13 , 14
                             status_code: value.status,
                             updated_by: Number(idDecode)
                         },
@@ -598,6 +642,17 @@ const updateApprovedEventRegisterUserJoin = {
                             user_id: true
                         }
                     });
+
+                    if (value.invoice_id) {
+                        await tx.payment.updateMany({
+                            where: {
+                                invoice_id: Number(value.invoice_id),
+                            },
+                            data: {
+                                status_code: value.status === StatusUserRegisterEvent.APPROVED_SUCCESS ? StatusUserPayment.APPROVED : StatusUserPayment.REJECT
+                            }
+                        });
+                    }
                     await tx.approvedEventJoin.create({
                         data: {
                             status_code: value.status,
@@ -612,50 +667,12 @@ const updateApprovedEventRegisterUserJoin = {
                         data: {
                             status: value.status,
                             type: 'Event_Join_Approved',
-                            detail: "Approved event user join by organizer",
+                            detail: "Approved payment user join by organizer",
                             event_join_id: value.event_join_id,
                             created_by: Number(idDecode)
                         },
-                    })
+                    });
 
-                    // สถานะอนุมัติจะไปสร้างใบ Invoice
-                    if (value.status == 12) {
-                        const eventJoin = await tx.eventJoin.findFirst({
-                            where: {
-                                id: Number(value.event_join_id)
-                            },
-                            select: {
-                                id: true,
-                                amount: true,
-                                Event: {
-                                    select: {
-                                        id: true,
-                                        name: true,
-                                        price: true,
-                                        due_date: true
-                                    }
-                                }
-                            }
-                        });
-                        // Create Invoice 
-                        const invCode = generateCode.generateINV(value.user_id);
-                        const InvoiceDetail = {
-                            event_join_id: eventJoin.id,
-                            amount: eventJoin.amount,
-                            price: eventJoin.Event.price,
-                            Event: eventJoin.Event
-                        }
-                        await tx.invoice.create({
-                            data: {
-                                invoice_code: invCode,
-                                count_print: 0,
-                                user_id: value.user_id,
-                                event_id: eventJoin.Event.id,
-                                event_join_id: eventJoin.id,
-                                invoice_detail: JSON.stringify(InvoiceDetail)
-                            }
-                        });
-                    }
 
                     return updateUserOnEventJoin.user_id ? true : false
                 });
@@ -835,17 +852,110 @@ const getAllEvent = {
 // ***************** Flow ผู้ใช้งาน ********************************* /
 const createPayment = {
     validate: {
-        payload: validateAdmin.createAdminValidate
+        payload: validatePayment.createPayment
     },
     handler: async (request, reply) => {
         try {
+            const payload = request.payload
+            const { value, error } = validatePayment.createPayment.validate(payload);
+            if (!error) {
+                const createPayment = await prismaClient.payment
+                    .create({
+                        data: {
+                            payment_code: generateCode.generatePAY(value.user_id),
+                            status_code: StatusUserPayment.PENDING,
+                            type_payment: value.type_payment,
+                            invoice_id: Number(value.invoice_id),
+                            total_price: value.total_price,
+                            event_id: Number(value.event_id),
+                            payment_by: Number(value.user_id),
+                        },
+                        select: {
+                            id: true
+                        }
+                    });
 
+                console.log(`createPayment`);
+                console.log(createPayment);
+
+                if (!_.isEmpty(createPayment)) {
+                    baseModel.IBaseSingleResultModel = {
+                        status: true,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
+                        message: httpResponse.STATUS_CREATED.message,
+                        error_message: '',
+                        result: createPayment
+                    }
+                    return reply.response(await baseResult.IBaseSingleResult(baseModel.IBaseSingleResultModel))
+                }
+                else {
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
+                        message: 'Create failed',
+                        error_message: httpResponse.STATUS_CREATED.message,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
+            } else {
+                return reply.response(await baseResult.IBaseNocontent(Response.BadRequestError(error.message)))
+            }
         }
         catch (e) {
             console.log(e);
             return reply.response(Response.InternalServerError(e.message))
         }
     }
+}
+
+const uploadImagePayment = {
+    payload: {
+        output: 'stream',
+        parse: true,
+        multipart: true
+    },
+    handler: async (request, reply) => {
+        try {
+            const payload = request.payload;
+            const t = await prismaClient.$transaction(async (tx) => {
+                const pathImage = await Handler.HandleUploadImagePayment(payload)
+                if (!pathImage) {
+                    return null
+                }
+                const updatePayment = await tx.payment.update({
+                    where: {
+                        id: Number(payload.id)
+                    },
+                    data: {
+                        slip: pathImage
+                    }
+                });
+                return updatePayment ? updatePayment : ''
+            });
+            if (!_.isEmpty(t)) {
+                baseModel.IBaseNocontentModel = {
+                    status: true,
+                    status_code: httpResponse.STATUS_200.status_code,
+                    error_message: '',
+                    message: 'Create successfully'
+                }
+                return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+            }
+            else {
+                baseModel.IBaseNocontentModel = {
+                    status: true,
+                    status_code: httpResponse.STATUS_500.status_code,
+                    error_message: '',
+                    message: httpResponse.STATUS_500.message
+                }
+                return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel))
+            }
+        }
+        catch (e) {
+            console.log(e)
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    },
 }
 
 // *********************************************** Back-ofiice **********************************************
@@ -1530,6 +1640,111 @@ const deleteOrganizerBackoffice = {
         }
     }
 }
+
+const getAllPayment = {
+    handler: async (request, reply) => {
+        try {
+            const params = request.query
+            //Logic pagination 
+            let skipData = (Number(params.page) - 1) * Number(params.per_page);
+            let takeData = params.per_page;
+
+            const findEventJoin = await prismaClient.eventJoin.findMany({
+                where: {
+                    event_id: Number(params.event_id)
+                },
+                select: {
+                    id: true
+                }
+            });
+
+            if (_.isEmpty(findEventJoin)) {
+                baseModel.IBaseCollectionResultsPaginationModel = {
+                    status: true,
+                    status_code: httpResponse.STATUS_201_NOCONENT.status_code,
+                    message: httpResponse.STATUS_201_NOCONENT.message,
+                    results: null,
+                    total_record: 0,
+                    page: 0,
+                    per_page: 0
+                }
+                return reply.response(await baseResult.IBaseCollectionResultsPagination(baseModel.IBaseCollectionResultsPaginationModel))
+            }
+            const data = await prismaClient.userOnEventJoin.findMany({
+                where: {
+                    OR: [
+                        ...findEventJoin.map((item) => {
+                            return {
+                                event_join_id: item.id
+                            }
+                        })
+                    ],
+                    // status_code: StatusUserRegisterEvent.WAIT_FOR_PAYMENT
+                },
+                select: {
+                    status_code: true,
+                    Users: true,
+                    EventJoin: {
+                        include: {
+                            Invoice: {
+                                include: {
+                                    Payment: true
+                                }
+                            }
+                        }
+
+                    },
+                },
+                orderBy: {
+                    created_at: 'desc'
+                },
+                skip: Number(skipData),
+                take: Number(takeData),
+            });
+
+            const countAll = await prismaClient.approvedEventJoin.count({
+                where: {
+                    OR: [
+                        ...findEventJoin.map((item) => {
+                            return {
+                                event_join_id: item.id
+                            }
+                        })
+                    ],
+                    status_code: StatusUserRegisterEvent.WAIT_FOR_PAYMENT
+                },
+            });
+
+            if (!_.isEmpty(data)) {
+                baseModel.IBaseCollectionResultsPaginationModel = {
+                    status: true,
+                    status_code: httpResponse.STATUS_200.status_code,
+                    message: httpResponse.STATUS_200.message,
+                    results: data,
+                    total_record: countAll,
+                    page: params.page,
+                    per_page: params.per_page
+                }
+                return reply.response(await baseResult.IBaseCollectionResultsPagination(baseModel.IBaseCollectionResultsPaginationModel))
+            }
+            else {
+                baseModel.IBaseCollectionResultsPaginationModel = {
+                    status: true,
+                    status_code: httpResponse.STATUS_201_NOCONENT.status_code,
+                    message: httpResponse.STATUS_201_NOCONENT.message,
+                    results: null,
+                    total_record: 0,
+                    page: 0,
+                    per_page: 0
+                }
+                return reply.response(await baseResult.IBaseCollectionResultsPagination(baseModel.IBaseCollectionResultsPaginationModel))
+            }
+        } catch (e) {
+            console.log(e);
+            return reply.response(Response.InternalServerError(e.message))
+        }
+    }
+}
 //FIXME: Member
 const getAllMemberBackoffice = {
     handler: async (request, reply) => {
@@ -2001,6 +2216,7 @@ module.exports = {
     createOrganizerBackoffice,
     updateOrganizerBackoffice,
     deleteOrganizerBackoffice,
+    getAllPayment,
     getAllMemberBackoffice,
     createMemberBackoffice,
     updateMemberBackoffice,
@@ -2011,6 +2227,8 @@ module.exports = {
     deleteAdminBackoffice,
     createRegisterEvent,
     getAllHistory,
+    createPayment,
+    uploadImagePayment,
 
 
 

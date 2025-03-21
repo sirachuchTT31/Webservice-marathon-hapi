@@ -26,7 +26,8 @@ const updateApprovedEventRegister = Joi.object().keys({
     event_join_id: Joi.number().required(),
     status: Joi.string().required(),
     user_id: Joi.number().required(),
-    reason : Joi.string().allow('').allow(null)
+    reason: Joi.string().allow('').allow(null),
+    invoice_id: Joi.any().required()
 });
 
 

@@ -30,7 +30,7 @@ model Users {
   ApprovedEventJoin      ApprovedEventJoin[]
   Invoice                Invoice[]
   Notification           Notification[]
-  UserOnRole            UserOnRole[]
+  UserOnRole             UserOnRole[]
 
   @@map("users")
 }
@@ -47,8 +47,8 @@ model UserOnRole {
 }
 
 model Role {
-  id          Int           @id @default(autoincrement())
-  name        String        @unique @db.VarChar(255)
+  id         Int          @id @default(autoincrement())
+  name       String       @unique @db.VarChar(255)
   UserOnRole UserOnRole[]
 
   @@map("role")
@@ -231,7 +231,7 @@ model Invoice {
   created_by     Int?
   updated_at     DateTime   @default(now()) @updatedAt @db.Timestamp(3)
   updated_by     Int?
-  Payment        Payment?
+  Payment        Payment[]
 
   @@map("invoice")
 }
@@ -251,37 +251,42 @@ model Notification {
 }
 
 model Payment {
-  id                  Int                @id @default(autoincrement())
-  status_code         String             @db.VarChar(2)
-  account_bank_number String             @db.VarChar(15)
-  account_bank_name   String             @db.VarChar(100)
+  id                  Int                 @id @default(autoincrement())
+  //approved , reject
+  status_code         String?             @db.VarChar(100)
+  account_bank_number String?             @db.VarChar(15)
+  account_bank_name   String?             @db.VarChar(100)
   total_price         Decimal
-  payment_code        String             @db.VarChar(100)
-  type_payment        String             @db.VarChar(100)
-  invoice_id          Int                @unique
+  payment_code        String              @db.VarChar(100)
+  //เงินสด , ชำระออนไลน์
+  type_payment        String              @db.VarChar(100)
+  slip                String?             @db.VarChar(255)
+  invoice_id          Int?
   event_id            Int?
-  transpayment_id     Int                @unique
-  TransactionPayment  TransactionPayment @relation(fields: [transpayment_id], references: [id])
-  Event               Event?             @relation(fields: [event_id], references: [id])
-  Invoice             Invoice            @relation(fields: [invoice_id], references: [id])
-  created_at          DateTime           @default(now()) @db.Timestamp(3)
+  transpayment_id     Int?
+  // User payment 
+  payment_by          Int?
+  TransactionPayment  TransactionPayment? @relation(fields: [transpayment_id], references: [id])
+  Event               Event?              @relation(fields: [event_id], references: [id])
+  Invoice             Invoice?            @relation(fields: [invoice_id], references: [id])
+  created_at          DateTime            @default(now()) @db.Timestamp(3)
   created_by          Int?
-  updated_at          DateTime           @default(now()) @updatedAt @db.Timestamp(3)
+  updated_at          DateTime            @default(now()) @updatedAt @db.Timestamp(3)
   updated_by          Int?
 
   @@map("payment")
 }
 
 model TransactionPayment {
-  id         Int      @id @default(autoincrement())
-  status     String   @db.VarChar(2)
+  id         Int       @id @default(autoincrement())
+  status     String    @db.VarChar(2)
   user_id    Int
-  created_at DateTime @default(now()) @db.Timestamp(3)
+  created_at DateTime  @default(now()) @db.Timestamp(3)
   created_by Int?
-  updated_at DateTime @default(now()) @updatedAt @db.Timestamp(3)
+  updated_at DateTime  @default(now()) @updatedAt @db.Timestamp(3)
   updated_by Int?
-  Payment    Payment?
-  Users      Users    @relation(fields: [user_id], references: [id])
+  Payment    Payment[]
+  Users      Users     @relation(fields: [user_id], references: [id])
 
   @@map("transaction_payment")
 }

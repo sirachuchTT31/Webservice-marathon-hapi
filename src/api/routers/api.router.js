@@ -114,6 +114,16 @@ const routers = [
         path: '/api/delete-organizer-backoffice',
         config: Controller.deleteOrganizerBackoffice
     },
+    {
+        method: 'GET',
+        path: '/api/get-all-payment',
+        config: Controller.getAllPayment
+    },
+    {
+        method: 'POST',
+        path: '/api/upload-image-payment',
+        config: Controller.uploadImagePayment
+    },
     //FIXME: Member
     {
         method: 'GET',
@@ -134,6 +144,11 @@ const routers = [
         method: 'POST',
         path: '/api/delete-member-backoffice',
         config: Controller.deleteMemberBackoffice
+    },
+    {
+        method : 'POST',
+        path : '/api/create-payment',
+        config: Controller.createPayment
     },
     //FIXME: Master-location
     {
