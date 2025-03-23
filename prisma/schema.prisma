@@ -31,8 +31,25 @@ model Users {
   Invoice                Invoice[]
   Notification           Notification[]
   UserOnRole             UserOnRole[]
+  Organization           Organization[]
 
   @@map("users")
+}
+
+model Organization {
+  id                  Int      @id @default(autoincrement())
+  registration_number String?  @db.VarChar(100)
+  contact             String?  @db.Text
+  certificate         String?  @db.Text
+  user_id             Int?
+  created_at          DateTime @default(now()) @db.Timestamp(3)
+  created_by          Int?
+  updated_at          DateTime @default(now()) @updatedAt @db.Timestamp(3)
+  updated_by          Int?
+
+  Users Users? @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("organization")
 }
 
 model UserOnRole {

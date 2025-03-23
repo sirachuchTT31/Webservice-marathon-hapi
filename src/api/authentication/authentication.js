@@ -30,11 +30,11 @@ const signIn = {
                     },
                     select: {
                         id: true,
-                        password : true,
+                        password: true,
                         username: true,
                         lastname: true,
                         name: true,
-                        access_status : true,
+                        access_status: true,
                         UserOnRole: {
                             select: {
                                 Role: {
@@ -320,6 +320,12 @@ const registerOrganizer = {
                             UserOnRole: {
                                 create: {
                                     role_id: 2
+                                }
+                            },
+                            Organization: {
+                                create: {
+                                    contact: value.contact,
+                                    registration_number: value.registration_number
                                 }
                             }
                         }

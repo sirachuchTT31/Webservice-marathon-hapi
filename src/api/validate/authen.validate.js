@@ -6,7 +6,7 @@ const signInValidate = Joi.object().keys({
 });
 
 const signOutValidate = Joi.object().keys({
-    authen_log_id : Joi.number().required()
+    authen_log_id: Joi.number().required()
 })
 
 const registerValidate = Joi.object().keys({
@@ -15,6 +15,8 @@ const registerValidate = Joi.object().keys({
     name: Joi.string().required(),
     lastname: Joi.string().required(),
     email: Joi.string().required(),
+    registration_number: Joi.string(),
+    contact: Joi.string()
 });
 
 
