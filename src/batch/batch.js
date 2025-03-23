@@ -10,6 +10,7 @@ const taskUpdateEvent = () => {
         cron.schedule('*/20 * * * *', async () => {
             console.log("🚀 ~ start batch:")
             let currentDate = new Date()
+            currentDate.setHours(0, 0, 0, 0);
             await primsa.$transaction(async (tx) => {
                 //Auto update due date status 01 Cancel 
                 const findWhereDuedate = await tx.event.findMany({
@@ -81,9 +82,10 @@ const taskUpdateEvent = () => {
 
 const taskUpdateRegisterEventUser = () => {
     try {
-        cron.schedule('*/1 * * * *', async () => {
+        cron.schedule('*/15 * * * *', async () => {
             console.log("🚀 ~ start batch payment user ")
             let currentDate = new Date()
+            currentDate.setHours(0, 0, 0, 0);
             await primsa.$transaction(async (tx) => {
                 const findPaymentDuedate = await tx.userOnEventJoin.findMany({
                     where: {
@@ -125,9 +127,10 @@ const taskUpdateRegisterEventUser = () => {
 
 const taskUppdateStatusUserHistory = () => {
     try {
-        cron.schedule('*/1 * * * *', async () => {
+        cron.schedule('*/15 * * * *', async () => {
             console.log("🚀 ~ start trigger status user history ")
             let currentDate = new Date();
+            currentDate.setHours(0, 0, 0, 0);
             await primsa.$transaction(async (tx) => {
                 const findUserHistory = await tx.userOnEventJoin.findMany({
                     where: {
