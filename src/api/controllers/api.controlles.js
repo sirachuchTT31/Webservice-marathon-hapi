@@ -241,14 +241,29 @@ const getAllHistory = {
                                 select: {
                                     id: true,
                                     description: true,
-                                    Invoice: true,
+                                    Invoice: {
+                                        include: {
+                                            Users: true,
+                                            Payment: {
+                                                where: {
+                                                    status_code: StatusUserPayment.APPROVED
+                                                }
+                                            },
+                                        }
+                                    },
                                     Event: {
                                         select: {
+                                            Users: {
+                                                select: {
+                                                    Organization: true
+                                                }
+                                            },
                                             id: true,
                                             name: true,
                                             path_image: true,
                                             due_date: true,
                                             status_code: true,
+                                            price: true
                                         },
                                     },
                                 }
@@ -763,7 +778,8 @@ const getAllEvent = {
             let takeData = params.per_page;
             let results = {}
             const t = await prismaClient.$transaction(async (tx) => {
-                let currentDate = new Date()
+                let currentDate = new Date();
+                currentDate.setHours(0, 0, 0, 0);
                 const findPagination = await tx.event.findMany({
                     where: {
                         AND: [
@@ -859,6 +875,21 @@ const createPayment = {
             const payload = request.payload
             const { value, error } = validatePayment.createPayment.validate(payload);
             if (!error) {
+                const payment = await prismaClient.payment
+                    .findFirst({
+                        where: {
+                            invoice_id: Number(value.invoice_id),
+                        }
+                    });
+                if (!_.isEmpty(payment)) {
+                    baseModel.IBaseNocontentModel = {
+                        status: false,
+                        status_code: httpResponse.STATUS_CREATED.status_code,
+                        message: 'ลูกค้าเคยชำระเงินไปแล้ว กรุณารอทางเจ้าหน้าที่ตรวจสอบข้อมูล.',
+                        error_message: httpResponse.STATUS_CREATED.message,
+                    }
+                    return reply.response(await baseResult.IBaseNocontent(baseModel.IBaseNocontentModel));
+                }
                 const createPayment = await prismaClient.payment
                     .create({
                         data: {
@@ -1420,7 +1451,7 @@ const getAllOrganizerBackoffice = {
                     where: {
                         UserOnRole: {
                             some: {
-                                role_id: 1
+                                role_id: 2
                             }
                         }
                     }

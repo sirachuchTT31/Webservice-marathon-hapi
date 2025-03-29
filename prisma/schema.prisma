@@ -39,6 +39,8 @@ model Users {
 model Organization {
   id                  Int      @id @default(autoincrement())
   registration_number String?  @db.VarChar(100)
+  account_bank_number String?  @db.VarChar(15)
+  account_bank_name   String?  @db.VarChar(100)
   contact             String?  @db.Text
   certificate         String?  @db.Text
   user_id             Int?
