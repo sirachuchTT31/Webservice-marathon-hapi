@@ -248,7 +248,7 @@ const registerMembers = {
                             access_status: 'Y',
                             UserOnRole: {
                                 create: {
-                                    role_id: 3,
+                                    role_id: 2,
                                 }
                             }
                         }
@@ -319,7 +319,7 @@ const registerOrganizer = {
                             access_status: 'Y',
                             UserOnRole: {
                                 create: {
-                                    role_id: 2
+                                    role_id: 3
                                 }
                             },
                             Organization: {
