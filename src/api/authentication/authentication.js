@@ -35,6 +35,7 @@ const signIn = {
                         lastname: true,
                         name: true,
                         access_status: true,
+                        avatar: true,
                         UserOnRole: {
                             select: {
                                 Role: {
@@ -65,9 +66,9 @@ const signIn = {
                         username: await cryptLib.encryptAES(findAuthen.username),
                         name: findAuthen.name,
                         lastname: findAuthen.lastname,
-                        role: await cryptLib.encryptAES(findAuthen.UserOnRole[0].Role.name)
+                        role: await cryptLib.encryptAES(findAuthen.UserOnRole[0].Role.name),
+                        avatar: findAuthen.avatar
                     }
-                    console.log(payloadJWT)
                     const token = await generateAccessToken(payloadJWT);
                     const refreshToken = await generateRefreshToken(payloadJWT);
                     const tokenDecode = await jwtDecode(token);
@@ -244,7 +245,7 @@ const registerMembers = {
                             name: value.name,
                             lastname: value.lastname,
                             email: value.email,
-                            avatar: 'https://avataaars.io/?avatarStyle=Transparent&topType=ShortHairShortCurly&accessoriesType=Round&hairColor=BrownDark&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light',
+                            avatar: '../../../../assets/img/profile/307ce493-b254-4b2d-8ba4-d12c080d6651.jpg',
                             access_status: 'Y',
                             UserOnRole: {
                                 create: {
@@ -315,7 +316,7 @@ const registerOrganizer = {
                             name: value.name,
                             lastname: value.lastname,
                             email: value.email,
-                            avatar: 'https://avataaars.io/?avatarStyle=Transparent&topType=ShortHairShortCurly&accessoriesType=Round&hairColor=BrownDark&facialHairType=BeardMedium&facialHairColor=BrownDark&clotheType=BlazerShirt&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light',
+                            avatar: '../../../../assets/img/profile/307ce493-b254-4b2d-8ba4-d12c080d6651.jpg',
                             access_status: 'Y',
                             UserOnRole: {
                                 create: {
